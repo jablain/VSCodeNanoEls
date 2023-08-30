@@ -1,0 +1,68 @@
+﻿Maxim
+
+I want to be able to clearly understand your code in details, so that I might
+contribute to it eventually. I do not want to waste your time getting me up to
+speed. So as I study your code, I am writing (for myself and anyone it could
+help) a document describing your code. See CodeOverview document.
+
+As I get deeper into the workings, I will update this document and send it to
+you if you think it is of value. If you want to take a look at it and tell me
+if I am correct, I would be very gratefull.
+
+In this document QuestionsAndRemarks, I will make some remarks and ask some
+follow up questions on the code I have looked at. Again if you have the time
+let me know what you think.
+
+All questions and remarks I make here are in no way critiques or put downs of
+your work. I am just trying to fully understand the code and maybe contribute
+in some way down the line.
+
+Regards
+
+Jacques Blain
+
+
+=== Settings section of h4.ino ===
+
+
+1- You define constants to keep track of maximum travel on your axis to prevent
+   users from making overtravel. What is the use case for this ? It cannot be
+   to prevent end of limit mechanical crash, because you could still crash with
+   an underlimit travel from certain position no ?
+
+   MK-> This guards against bugs in the code which send the motor to a far-away
+   position causing run-away movement on the lathe. Instead of crashing,
+   everything stops. It can also happen when pitch is set to e.g. 1 inch and the
+   spindle rotates very fast.
+
+   JB-> Understood, since I have at least this speed software issue and have a
+   mostly untested setup, I will look into installing End Of Travel limit switches
+   that will directly cutoff the motor DC voltage. That way I will not fear any
+   mechanical crashes  
+
+2 - Eventually wouldn’t it be usefull to include the capabilities of setting the
+    machine parameters from the screen ? I think you have an excellent product,
+    but many potential customers of yours might be intimidated by the arduino IDE
+    and controller programming ?
+
+   MK-> Yes, this is what the currently-unused Settings button was intended for
+        but as you can see, the amount of settings is vast and their values are
+        non-trivial. Also, comments are essential for understanding what value to
+        set. Besides, current approach enables people to make any changes they want
+        - not just settings - for example you changed the ENA logic - which would
+        not be possible via settings. It also won't be possible to share one's
+        settings like you did with one screenshot. When settings are defined in 2
+        places - code and local memory, it's going to be an additional complication
+        for debugging. As you can see, some settings are dependent on each other.
+        Would you use those settings menus? I don't think so - it's easier for you
+        to write things down in 1 file with all other modifications - and no one
+        else has asked for the settings menu so far - so even if I implement it
+        today, no one will use it? Just more lines of code to maintain. So overall
+        it's not clear if this is worth doing - at least for now.
+
+        My auxiliary goal with this project is to get people comfortable with
+        programming by showing the simplest end-to-end path, making sure they have
+        all the tools so that further modifications and new projects.
+
+    JB-> Understood
+

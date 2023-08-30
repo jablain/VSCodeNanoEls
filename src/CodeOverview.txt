@@ -1,0 +1,132 @@
+﻿Overview
+
+This is a description of the NanoEls software written by Maxim Kachurovskiy. It
+is an Arduino sketch develloped for the Arduino native IDE. That runs on a dual
+core (core 0 and core 1) Esp32 processor from Espressif.
+
+The h4 sketch uses the following external librairies in support :
+
+	SPI.h:	An Esp32 librairy for SPI communications
+
+	Wire.h: An I2C communications librairy
+
+	LiquidCrystal.h: A librairy to control the display
+
+	Preferences.h: An Esp32 librairy to access non volatile storage to read and
+	               write settings
+
+	Adafruit_TCA8418.h : I2C Driver for the Adafruit TCA8418 Keypad Matrix
+
+Hardware definition section
+
+  The first lines of codes ending with this line :
+
+  /* Changing anything below shouldn't be needed for basic use. */
+
+  Should be reviewed carefully and adapted for each specific lathe this
+  controller is used with. They include :
+
+  - Spindle
+  	Encoder resolution and dead band
+
+  - Carriage (Z axis)
+    Leadscrew pitch, backlash in deci microns (10^-7 m.) and total travel motor
+	steps per turn and rotation direction, Starting speed, acceleration and
+	slew speed
+
+- Cross slide (X axis)
+    Leadscrew pitch, backlash in deci microns (10^-7 m.) and total travel motor
+	steps per turn and rotation direction, Starting speed, acceleration and
+	slew speed
+
+General code organization
+
+    The ESP32 has two cores. This code uses core 0 to run the following tasks
+
+	Tasks that determine all axis moves :
+
+	  void taskMoveZ(void *param)
+	    Calculates and requests the neeeded Z position
+
+	  void taskMoveX(void *param)
+	    Calculates and requests the neeeded X position
+
+	  void taskMoveA1(void *param)
+	    Calculates and requests the neeeded A1 position
+
+	  void taskGcode(void *param)
+	    Translate GCode into position requests
+
+	Additional tasks responsible for keypad input and LCD display :
+
+	  void taskDisplay(void *param)
+	    Responsible for keeping the LCD refreshed
+
+	  void taskKeypad(void *param)
+	    Responsible for processing keypad entries
+
+	Core 1 runs one single function : the main void loop () function. This
+	function runs continuously, unless an estop is detected. It actually
+	performs motor movements
+
+	This core use strategy ensures minimum response time for motor movements.
+
+Code execution sequence
+
+	Since this is an Arduino sketch, the first code that is executed is
+	contained in function void setup(). This function first sets up all of the
+	ESP32 pins to their correct role. Then all of the saved settings are read
+	from non volatile memory.
+	
+	Then all global variables are initialised to their initial values.
+
+	Then, using I2C interface, we connect to the lcd Display and keypad and
+	initialised	them.
+	
+	Finally the various tasks described at the end of the General code
+	organization section are created and assigned to run on core 0 :
+
+	Then the loop contained in void loop() runs continuously unless an
+	emergency stop is signaled. This loop is responsible for actual
+	physical movements of the stepper motors. It runs alone	in the ESP32 CPU
+	core 1 to ensure the best real time response for the system.
+
+    Finally setup () connects interrupt function void IRAM_ATTR spinEnc() to
+	run on core 0. Encoder Pulses (A or B) are monitored and used to track the
+	current	spindle position in variable : spindlePosDelta
+
+Currently supported modes
+
+    NanoEls can be running in any of the following modes
+
+	B_MODE_GEARS
+
+	B_MODE_TURN
+	  In this mode external or internal Z turning of a part can be performed.
+	  Before running this mode all sofware limits must be set, as well as the
+	  desired pitch. Upon starting the user must specify how many passes will
+	  be done between the X specified limits
+
+	B_MODE_FACE
+	  In this mode X facing of a part can be performed. Before running this
+	  mode all sofware limits must be set, as well as the desired pitch.
+
+	B_MODE_CONE
+	  In this mode X facing of a part can be performed. Before running this
+	  mode all sofware limits must be set, as well as the desired pitch.
+
+	B_MODE_CUT
+	  In this mode X facing of a part can be performed. Before running this
+	  mode all sofware limits must be set, as well as the desired pitch.
+
+	B_MODE_THREAD
+	  In this mode X facing of a part can be performed. Before running this
+	  mode all sofware limits must be set, as well as the desired pitch.
+
+	B_MODE_OTHER
+      A few additional modes are available as "Other". These include
+	  
+	  - ellipse mode
+	  - Gcode mode to interpret and execute GCode commands received on the USB
+	    cable
+	  - ASY mode ??? Maxim
