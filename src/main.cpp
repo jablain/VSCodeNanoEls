@@ -6,47 +6,14 @@
 #include <Preferences.h>
 #include <Adafruit_TCA8418.h>
 
-// https://github.com/kachurovskiy/nanoels
-
-/* Change values in this section to suit your hardware. */
-
-// Define your hardware parameters here.
-const int ENCODER_STEPS_INT = 1024; // 600 step spindle optical rotary encoder. Fractional values not supported.
-const int ENCODER_BACKLASH = 0; // was 3 Number of impulses encoder can issue without movement of the spindle
-
-// Spindle rotary encoder pins. Swap values if the rotation direction is wrong.
-#define ENC_A 7
-#define ENC_B 15
-
-// Main lead screw (Z) parameters.
-const long SCREW_Z_DU = 5386; // was 5386 8 TPI lead 2:1 gearbox 3:1 pulleys in deci-microns (10^-7 of a meter)
-const long MOTOR_STEPS_Z = 400; //1600
-const long SPEED_START_Z = 5 * MOTOR_STEPS_Z; // Initial speed of a motor, steps / second.
-const long ACCELERATION_Z = 100 * MOTOR_STEPS_Z; // Acceleration of a motor, steps / second ^ 2.
-const long SPEED_MANUAL_MOVE_Z = 20 * MOTOR_STEPS_Z; // was 6 Maximum speed of a motor during manual move, steps / second.
-const bool INVERT_Z = true; // change (true/false) if the carriage moves e.g. "left" when you press "right".
-const bool INVERT_Z_ENA = true;
-const bool NEEDS_REST_Z = false; // Set to false for closed-loop drivers, true for open-loop.
-const long MAX_TRAVEL_MM_Z = 300; // Lathe bed doesn't allow to travel more than this in one go, 30cm / ~1 foot
-const long BACKLASH_DU_Z = 8382; // was 8382 33 mil backlash in deci-microns (10^-7 of a meter)
-const char NAME_Z = 'Z'; // Text shown on screen before axis position value, GCode axis name
-
-// Cross-slide lead screw (X) parameters.
-const long SCREW_X_DU = 8445; // 8466; // 10 tpi lead 3:1 pulleys in deci-microns (10^-7) of a meter
-const long MOTOR_STEPS_X = 400; // 1600 pulses/revolution
-const long SPEED_START_X = 3 * MOTOR_STEPS_X; // Initial speed of a motor, steps / second.
-const long ACCELERATION_X = 100 * MOTOR_STEPS_X; // was 10 Acceleration of a motor, steps / second ^ 2.
-const long SPEED_MANUAL_MOVE_X = 10 * MOTOR_STEPS_X; // was 3 Maximum speed of a motor during manual move, steps / second.
-const bool INVERT_X = true; // change (true/false) if the carriage moves e.g. "left" when you press "right".
-const bool INVERT_X_ENA = true;
-const bool NEEDS_REST_X = false; // Set to false for all kinds of drivers or X will be unlocked when not moving.
-const long MAX_TRAVEL_MM_X = 100; // Cross slide doesn't allow to travel more than this in one go, 10cm
-const long BACKLASH_DU_X = 4064; // 16 mil backlash in deci-microns (10^-7 of a meter)
-const char NAME_X = 'X'; // Text shown on screen before axis position value, GCode axis name
-
-// Manual stepping with left/right/up/down buttons. Only used when step isn't default continuous (1mm or 0.1").
-const long STEP_TIME_MS = 500; // Time in milliseconds it should take to make 1 manual step.
-const long DELAY_BETWEEN_STEPS_MS = 80; // Time in milliseconds to wait between steps.
+#include "config.hpp"
+#include "pcbpins.hpp"
+#include "keypad.hpp"
+#include "preferences.hpp"
+#include "modes.hpp"
+#include "macros.hpp"
+#include "lcd.hpp"
+#include "axis.hpp"
 
 /* Changing anything below shouldn't be needed for basic use. */
 
@@ -85,117 +52,14 @@ const long SAVE_DELAY_US = 5000000; // Wait 5s after last save and last change o
 const long DIRECTION_SETUP_DELAY_US = 5; // Stepper driver needs some time to adjust to direction change
 const long STEPPED_ENABLE_DELAY_MS = 100; // Delay after stepper is enabled and before issuing steps
 
-// Version of the pref storage format, should be changed when non-backward-compatible
-// changes are made to the storage logic, resulting in Preferences wipe on first start.
-#define PREFERENCES_VERSION 1
-#define PREF_NAMESPACE "h4"
-
 // GCode-related constants.
 const float LINEAR_INTERPOLATION_PRECISION = 0.1; // 0 < x <= 1, smaller values make for quicker G0 and G1 moves
 const long GCODE_WAIT_EPSILON_STEPS = 10;
 
 // To be incremented whenever a measurable improvement is made.
 #define SOFTWARE_VERSION 7
-
 // To be changed whenever a different PCB / encoder / stepper / ... design is used.
 #define HARDWARE_VERSION 4
-
-#define Z_ENA 16
-#define Z_DIR 17
-#define Z_STEP 18
-
-#define X_ENA 8
-#define X_DIR 19
-#define X_STEP 20
-
-#define BUZZ 4
-#define SCL 5
-#define SDA 6
-
-#define A11 9
-#define A12 10
-#define A13 11
-
-#define A21 12
-#define A22 13
-#define A23 14
-
-#define B_LEFT 57
-#define B_RIGHT 37
-#define B_UP 47
-#define B_DOWN 67
-#define B_MINUS 5
-#define B_PLUS 64
-#define B_ON 17
-#define B_OFF 27
-#define B_STOPL 7
-#define B_STOPR 15
-#define B_STOPU 6
-#define B_STOPD 16
-#define B_DISPL 14
-#define B_STEP 24
-#define B_SETTINGS 34
-#define B_MEASURE 54
-#define B_REVERSE 44
-#define B_0 51
-#define B_1 41
-#define B_2 61
-#define B_3 31
-#define B_4 2
-#define B_5 21
-#define B_6 12
-#define B_7 11
-#define B_8 22
-#define B_9 1
-#define B_BACKSPACE 32
-#define B_MODE_GEARS 42
-#define B_MODE_TURN 52
-#define B_MODE_FACE 62
-#define B_MODE_CONE 3
-#define B_MODE_CUT 13
-#define B_MODE_THREAD 23
-#define B_MODE_OTHER 33
-#define B_X 53
-#define B_Z 43
-#define B_A 4
-#define B_B 63
-
-#define PREF_VERSION "v"
-#define PREF_DUPR "d"
-#define PREF_POS_Z "zp"
-#define PREF_LEFT_STOP_Z "zls"
-#define PREF_RIGHT_STOP_Z "zrs"
-#define PREF_ORIGIN_POS_Z "zpo"
-#define PREF_POS_GLOBAL_Z "zpg"
-#define PREF_MOTOR_POS_Z "zpm"
-#define PREF_DISABLED_Z "zd"
-#define PREF_POS_X "xp"
-#define PREF_LEFT_STOP_X "xls"
-#define PREF_RIGHT_STOP_X "xrs"
-#define PREF_ORIGIN_POS_X "xpo"
-#define PREF_POS_GLOBAL_X "xpg"
-#define PREF_MOTOR_POS_X "xpm"
-#define PREF_DISABLED_X "xd"
-#define PREF_POS_A1 "a1p"
-#define PREF_LEFT_STOP_A1 "a1ls"
-#define PREF_RIGHT_STOP_A1 "a1rs"
-#define PREF_ORIGIN_POS_A1 "a1po"
-#define PREF_POS_GLOBAL_A1 "a1pg"
-#define PREF_MOTOR_POS_A1 "a1pm"
-#define PREF_DISABLED_A1 "a1d"
-#define PREF_SPINDLE_POS "sp"
-#define PREF_SPINDLE_POS_AVG "spa"
-#define PREF_OUT_OF_SYNC "oos"
-#define PREF_SPINDLE_POS_GLOBAL "spg"
-#define PREF_SHOW_ANGLE "ang"
-#define PREF_SHOW_TACHO "rpm"
-#define PREF_STARTS "sta"
-#define PREF_MODE "mod"
-#define PREF_MEASURE "mea"
-#define PREF_CONE_RATIO "cr"
-#define PREF_TURN_PASSES "tp"
-#define PREF_MOVE_STEP "ms"
-#define PREF_AUX_FORWARD "af"
 
 #define MOVE_STEP_1 10000 // 1mm
 #define MOVE_STEP_2 1000 // 0.1mm
@@ -204,17 +68,6 @@ const long GCODE_WAIT_EPSILON_STEPS = 10;
 #define MOVE_STEP_IMP_1 25400 // 1/10"
 #define MOVE_STEP_IMP_2 2540 // 1/100"
 #define MOVE_STEP_IMP_3 254 // 1/1000" also known as 1 thou
-
-#define MODE_NORMAL 0
-#define MODE_ASYNC 2
-#define MODE_CONE 3
-#define MODE_TURN 4
-#define MODE_FACE 5
-#define MODE_CUT 6
-#define MODE_THREAD 7
-#define MODE_ELLIPSE 8
-#define MODE_GCODE 9
-#define MODE_A1 10
 
 #define MEASURE_METRIC 0
 #define MEASURE_INCH 1
@@ -238,37 +91,6 @@ const long RPM_UPDATE_INTERVAL_MICROS = 1000000; // Don't redraw RPM more often 
 const long GCODE_FEED_DEFAULT_DU_SEC = 20000; // Default feed in du/sec in GCode mode
 const float GCODE_FEED_MIN_DU_SEC = 167; // Minimum feed in du/sec in GCode mode - F1
 
-#define DREAD(x) digitalRead(x)
-#define DHIGH(x) digitalWrite(x, HIGH)
-#define DLOW(x) digitalWrite(x, LOW)
-#define DWRITE(x, y) digitalWrite(x, y)
-
-#define DELAY(x) vTaskDelay(x / portTICK_PERIOD_MS);
-
-LiquidCrystal lcd(21, 48, 47, 38, 39, 40, 41, 42, 2, 1);
-#define LCD_HASH_INITIAL -3845709 // Random number that's unlikely to naturally occur as an actual hash
-long lcdHashLine0 = LCD_HASH_INITIAL;
-long lcdHashLine1 = LCD_HASH_INITIAL;
-long lcdHashLine2 = LCD_HASH_INITIAL;
-long lcdHashLine3 = LCD_HASH_INITIAL;
-bool splashScreen = false;
-
-Adafruit_TCA8418 keypad;
-unsigned long keypadTimeUs = 0;
-
-// Most buttons we only have "down" handling, holding them has no effect.
-// Buttons with special "holding" logic have flags below.
-bool buttonLeftPressed = false;
-bool buttonRightPressed = false;
-bool buttonUpPressed = false;
-bool buttonDownPressed = false;
-bool buttonOffPressed = false;
-bool buttonGearsPressed = false;
-bool buttonTurnPressed = false;
-
-bool inNumpad = false;
-int numpadDigits[20];
-int numpadIndex = 0;
 
 bool isOn = false;
 bool nextIsOn; // isOn value that should be applied asap
@@ -290,127 +112,7 @@ int savedStarts = 0; // starts saved in Preferences
 int nextStarts = starts; // number of starts that should be used asap
 bool nextStartsFlag = false; // whether nextStarts requires attention
 
-struct Axis {
-  SemaphoreHandle_t mutex;
 
-  char name;
-  bool active;
-  bool rotational;
-  float motorSteps; // motor steps per revolution of the axis
-  float screwPitch; // lead screw pitch in deci-microns (10^-7 of a meter)
-
-  long pos; // relative position of the tool in stepper motor steps
-  long savedPos; // value saved in Preferences
-  float fractionalPos; // fractional distance in steps that we meant to travel but couldn't
-  long originPos; // relative position of the stepper motor to origin, in steps
-  long savedOriginPos; // originPos saved in Preferences
-  long posGlobal; // global position of the motor in steps
-  long savedPosGlobal; // posGlobal saved in Preferences
-  int pendingPos; // steps of the stepper motor that we should make as soon as possible
-  long motorPos; // position of the motor in stepper motor steps, same as pos unless moving back, then differs by backlashSteps
-  long savedMotorPos; // motorPos saved in Preferences
-  bool continuous; // whether current movement is expected to continue until an unknown position
-
-  long leftStop; // left stop value of pos
-  long savedLeftStop; // value saved in Preferences
-  long nextLeftStop; // left stop value that should be applied asap
-  bool nextLeftStopFlag; // whether nextLeftStop required attention
-
-  long rightStop; // right stop value of pos
-  long savedRightStop; // value saved in Preferences
-  long nextRightStop; // right stop value that should be applied asap
-  bool nextRightStopFlag; // whether nextRightStop requires attention
-
-  long speed; // motor speed in steps / second
-  long speedStart; // Initial speed of a motor, steps / second.
-  long speedMax; // To limit max speed e.g. for manual moves
-  long speedManualMove; // Maximum speed of a motor during manual move, steps / second.
-  long acceleration; // Acceleration of a motor, steps / second ^ 2.
-  long decelerateSteps; // Number of steps before the end position the deceleration should start.
-
-  bool direction; // To reset speed when direction changes.
-  bool directionInitialized;
-  unsigned long stepStartUs;
-  int stepperEnableCounter;
-  bool disabled;
-  bool savedDisabled;
-
-  bool invertStepper; // change (true/false) if the carriage moves e.g. "left" when you press "right".
-  bool needsRest; // set to false for closed-loop drivers, true for open-loop.
-  bool movingManually; // whether stepper is being moved by left/right buttons
-  long estopSteps; // amount of steps to exceed machine limits
-  long backlashSteps; // amount of steps in reverse direction to re-engage the carriage
-  long gcodeRelativePos; // absolute position in steps that relative GCode refers to
-
-  int ena; // Enable pin of this motor
-  int dir; // Direction pin of this motor
-  int step; // Step pin of this motor
-};
-
-void initAxis(Axis* a, char name, bool active, bool rotational, float motorSteps, float screwPitch, long speedStart, long speedManualMove,
-    long acceleration, bool invertStepper, bool needsRest, long maxTravelMm, long backlashDu, int ena, int dir, int step) {
-  a->mutex = xSemaphoreCreateMutex();
-
-  a->name = name;
-  a->active = active;
-  a->rotational = rotational;
-  a->motorSteps = motorSteps;
-  a->screwPitch = screwPitch;
-
-  a->pos = 0;
-  a->savedPos = 0;
-  a->fractionalPos = 0.0;
-  a->originPos = 0;
-  a->savedOriginPos = 0;
-  a->posGlobal = 0;
-  a->savedPosGlobal = 0;
-  a->pendingPos = 0;
-  a->motorPos = 0;
-  a->savedMotorPos = 0;
-  a->continuous = false;
-
-  a->leftStop = 0;
-  a->savedLeftStop = 0;
-  a->nextLeftStopFlag = false;
-
-  a->rightStop = 0;
-  a->savedRightStop = 0;
-  a->nextRightStopFlag = false;
-
-  a->speed = speedStart;
-  a->speedStart = speedStart;
-  a->speedMax = LONG_MAX;
-  a->speedManualMove = speedManualMove;
-  a->acceleration = acceleration;
-  a->decelerateSteps = 0;
-  long s = speedManualMove;
-  while (s > speedStart) {
-    a->decelerateSteps++;
-    s -= a->acceleration / float(s);
-  }
-
-  a->direction = true;
-  a->directionInitialized = false;
-  a->stepStartUs = 0;
-  a->stepperEnableCounter = 0;
-  a->disabled = false;
-  a->savedDisabled = false;
-
-  a->invertStepper = invertStepper;
-  a->needsRest = needsRest;
-  a->movingManually = false;
-  a->estopSteps = maxTravelMm * 10000 / a->screwPitch * a->motorSteps;
-  a->backlashSteps = backlashDu * a->motorSteps / a->screwPitch;
-  a->gcodeRelativePos = 0;
-
-  a->ena = ena;
-  a->dir = dir;
-  a->step = step;
-}
-
-Axis z;
-Axis x;
-Axis a1;
 
 unsigned long saveTime = 0; // micros() of the previous Prefs write
 unsigned long spindleEncTime = 0; // micros() of the previous spindle update
@@ -466,84 +168,6 @@ long opSubIndex = 0; // Sub-index of an automation operation
 int opDuprSign = 1; // 1 if dupr was positive when operation started, -1 if negative
 long opDupr = 0; // dupr that the multi-pass operation started with
 
-const int customCharMmCode = 0;
-byte customCharMm[] = {
-  B11010,
-  B10101,
-  B10101,
-  B00000,
-  B11010,
-  B10101,
-  B10101,
-  B00000
-};
-const int customCharLimUpCode = 1;
-byte customCharLimUp[] = {
-  B11111,
-  B00100,
-  B01110,
-  B10101,
-  B00100,
-  B00100,
-  B00000,
-  B00000
-};
-const int customCharLimDownCode = 2;
-byte customCharLimDown[] = {
-  B00000,
-  B00100,
-  B00100,
-  B10101,
-  B01110,
-  B00100,
-  B11111,
-  B00000
-};
-const int customCharLimLeftCode = 3;
-byte customCharLimLeft[] = {
-  B10000,
-  B10010,
-  B10100,
-  B11111,
-  B10100,
-  B10010,
-  B10000,
-  B00000
-};
-const int customCharLimRightCode = 4;
-byte customCharLimRight[] = {
-  B00001,
-  B01001,
-  B00101,
-  B11111,
-  B00101,
-  B01001,
-  B00001,
-  B00000
-};
-const int customCharLimUpDownCode = 5;
-byte customCharLimUpDown[] = {
-  B11111,
-  B00100,
-  B01110,
-  B00000,
-  B01110,
-  B00100,
-  B11111,
-  B00000
-};
-const int customCharLimLeftRightCode = 6;
-byte customCharLimLeftRight[] = {
-  B00000,
-  B10001,
-  B10001,
-  B11111,
-  B10001,
-  B10001,
-  B00000,
-  B00000
-};
-
 String gcodeCommand = "";
 long gcodeFeedDuPerSec = GCODE_FEED_DEFAULT_DU_SEC;
 bool gcodeInitialized = false;
@@ -553,6 +177,12 @@ bool gcodeInSemicolon = false;
 
 hw_timer_t *async_timer = timerBegin(0, 80, true);
 bool timerAttached = false;
+
+unsigned long pulse1HighMicros = 0;
+unsigned long pulse2HighMicros = 0;
+
+//===============================================
+// Code starts here
 
 int getApproxRpm() {
   unsigned long t = micros();
@@ -708,6 +338,29 @@ int printNoTrailing0(float value) {
   return lcd.print(value, points);
 }
 
+int printMode() {
+  if (mode == MODE_ASYNC) {
+    return lcd.print("ASY ");
+  } else if (mode == MODE_CONE) {
+    return lcd.print("CONE ");
+  } else if (mode == MODE_TURN) {
+    return lcd.print("TURN ");
+  } else if (mode == MODE_FACE) {
+    return lcd.print("FACE ");
+  } else if (mode == MODE_CUT) {
+    return lcd.print("CUT ");
+  } else if (mode == MODE_THREAD) {
+    return lcd.print("THRD ");
+  } else if (mode == MODE_ELLIPSE) {
+    return lcd.print("ELLI ");
+  } else if (mode == MODE_GCODE) {
+    return lcd.print("GCODE ");
+  } else if (mode == MODE_A1) {
+    return lcd.print("A1 ");
+  }
+  return 0;
+}
+
 bool needZStops() {
   return mode == MODE_TURN || mode == MODE_FACE || mode == MODE_THREAD || mode == MODE_ELLIPSE;
 }
@@ -738,29 +391,6 @@ long getPassModeXStart() {
   if (mode == MODE_FACE || mode == MODE_CUT) return dupr > 0 ? x.rightStop : x.leftStop;
   if (mode == MODE_ELLIPSE) return x.rightStop;
   return x.pos;
-}
-
-int printMode() {
-  if (mode == MODE_ASYNC) {
-    return lcd.print("ASY ");
-  } else if (mode == MODE_CONE) {
-    return lcd.print("CONE ");
-  } else if (mode == MODE_TURN) {
-    return lcd.print("TURN ");
-  } else if (mode == MODE_FACE) {
-    return lcd.print("FACE ");
-  } else if (mode == MODE_CUT) {
-    return lcd.print("CUT ");
-  } else if (mode == MODE_THREAD) {
-    return lcd.print("THRD ");
-  } else if (mode == MODE_ELLIPSE) {
-    return lcd.print("ELLI ");
-  } else if (mode == MODE_GCODE) {
-    return lcd.print("GCODE ");
-  } else if (mode == MODE_A1) {
-    return lcd.print("A1 ");
-  }
-  return 0;
 }
 
 long getNumpadResult() {
@@ -1017,9 +647,6 @@ void updateDisplay() {
 void IRAM_ATTR spinEnc() {
   spindlePosDelta += DREAD(ENC_B) ? -1 : 1;
 }
-
-unsigned long pulse1HighMicros = 0;
-unsigned long pulse2HighMicros = 0;
 
 // Called on a FALLING interrupt for the first axis rotary encoder pin.
 void IRAM_ATTR pulse1Enc() {
@@ -2579,8 +2206,6 @@ void setup() {
   xTaskCreatePinnedToCore(taskGcode, "taskGcode", 10000 /* stack size */, NULL, 0 /* priority */, NULL, 0 /* core */);
 }
 
-
-
 // Must be called while holding motionMutex.
 void applyDupr() {
   if (nextDupr == dupr) {
@@ -2614,7 +2239,6 @@ void applyConeRatio() {
 long spindleFromPos(Axis* a, long p) {
   return p * a->screwPitch * ENCODER_STEPS_FLOAT / a->motorSteps / (dupr * starts);
 }
-
 
 void leaveStop(Axis* a, long oldStop) {
   if (mode == MODE_CONE) {
@@ -3135,9 +2759,10 @@ void loop() {
   xSemaphoreGive(motionMutex);
 }
 
+// https://github.com/kachurovskiy/nanoels
+
 int main () {
   setup();
-  while (true) {
+  while (true)
     loop();
-  }
 };

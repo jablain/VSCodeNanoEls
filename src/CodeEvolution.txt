@@ -1,0 +1,11 @@
+These are notes to follow the evolution of the code
+
+Original transfer from Arduino Ide
+
+   Metrics
+      # of lines 3143
+      RAM:   [=         ]   6.7% (used 22084 bytes from 327680 bytes)
+      Flash: [=         ]  10.9% (used 365045 bytes from 3342336 bytes)
+      Loop rate           :
+      Interrupt drop rate :
+
