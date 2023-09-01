@@ -66,4 +66,15 @@ extern Axis a1;
 void initAxis(Axis* a, char name, bool active, bool rotational, float motorSteps, float screwPitch, long speedStart, long speedManualMove,
     long acceleration, bool invertStepper, bool needsRest, long maxTravelMm, long backlashDu, int ena, int dir, int step);
 
+long stepsToDu(Axis* a, long steps);
+long getAxisPosDu(Axis* a);
+long getAxisStopDiffDu(Axis* a);
 
+void markAxis0(Axis* a);
+
+void updateEnable(Axis* a);
+
+void reset();
+void setDupr(long value);
+void setStarts(int value);
+void setConeRatio(float value);

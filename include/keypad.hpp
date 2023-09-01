@@ -1,5 +1,8 @@
 #pragma once
 
+#include <Adafruit_TCA8418.h>
+#include "axis.hpp"
+
 #define B_LEFT 57
 #define B_RIGHT 37
 #define B_UP 47
@@ -40,98 +43,58 @@
 #define B_A 4
 #define B_B 63
 
-Adafruit_TCA8418 keypad;
-unsigned long keypadTimeUs = 0;
+extern Adafruit_TCA8418 keypad;
+
+extern unsigned long keypadTimeUs;
 
 // Most buttons we only have "down" handling, holding them has no effect.
 // Buttons with special "holding" logic have flags below.
-bool buttonLeftPressed = false;
-bool buttonRightPressed = false;
-bool buttonUpPressed = false;
-bool buttonDownPressed = false;
-bool buttonOffPressed = false;
-bool buttonGearsPressed = false;
-bool buttonTurnPressed = false;
+extern bool buttonLeftPressed;
+extern bool buttonRightPressed;
+extern bool buttonUpPressed;
+extern bool buttonDownPressed;
+extern bool buttonOffPressed;
+extern bool buttonGearsPressed;
+extern bool buttonTurnPressed;
+extern unsigned long resetMillis;
+extern bool opIndexAdvanceFlag; // Whether user requested to move to the next pass
 
-bool inNumpad = false;
-int numpadDigits[20];
-int numpadIndex = 0;
 
-const int customCharMmCode = 0;
-byte customCharMm[] = {
-  B11010,
-  B10101,
-  B10101,
-  B00000,
-  B11010,
-  B10101,
-  B10101,
-  B00000
-};
-const int customCharLimUpCode = 1;
-byte customCharLimUp[] = {
-  B11111,
-  B00100,
-  B01110,
-  B10101,
-  B00100,
-  B00100,
-  B00000,
-  B00000
-};
-const int customCharLimDownCode = 2;
-byte customCharLimDown[] = {
-  B00000,
-  B00100,
-  B00100,
-  B10101,
-  B01110,
-  B00100,
-  B11111,
-  B00000
-};
-const int customCharLimLeftCode = 3;
-byte customCharLimLeft[] = {
-  B10000,
-  B10010,
-  B10100,
-  B11111,
-  B10100,
-  B10010,
-  B10000,
-  B00000
-};
-const int customCharLimRightCode = 4;
-byte customCharLimRight[] = {
-  B00001,
-  B01001,
-  B00101,
-  B11111,
-  B00101,
-  B01001,
-  B00001,
-  B00000
-};
-const int customCharLimUpDownCode = 5;
-byte customCharLimUpDown[] = {
-  B11111,
-  B00100,
-  B01110,
-  B00000,
-  B01110,
-  B00100,
-  B11111,
-  B00000
-};
-const int customCharLimLeftRightCode = 6;
-byte customCharLimLeftRight[] = {
-  B00000,
-  B10001,
-  B10001,
-  B11111,
-  B10001,
-  B10001,
-  B00000,
-  B00000
-};
+extern bool inNumpad;
+extern int numpadDigits[20];
+extern int numpadIndex;
+extern long getNumpadResult();
+extern float numpadToConeRatio();
+extern long numpadToDeciMicrons();
 
+void buttonOnOffPress(bool on);
+void processKeypadEvent();
+void beep();
+void buttonOffRelease();
+bool processNumpad(int keyCode);
+
+void numpadPress(int digit);
+void numpadBackspace();
+void numpadPlusMinus(bool plus);
+void resetNumpad();
+
+
+void buttonPlusMinusPress(bool plus);
+void buttonLeftStopPress(Axis* a);
+void buttonRightStopPress(Axis* a);
+void buttonDisplayPress();
+void buttonMoveStepPress();
+void buttonModePress();
+
+void buttonMeasurePress();
+void buttonReversePress();
+bool processNumpadResult(int keyCode);
+
+void setTurnPasses(int value);
+void setLeftStop(Axis* a, long value);
+void setRightStop(Axis* a, long value);
+long normalizePitch(long pitch);
+void setMeasure(int value);
+bool stepToFinal(Axis* a, long newPos);
+bool stepTo(Axis* a, long newPos, bool continuous);
+bool stepToContinuous(Axis* a, long newPos);
