@@ -1,10 +1,13 @@
+#include <Preferences.h>
 #include <LiquidCrystal.h>
 #include "vars.hpp"
-#include "display.hpp"
+#include "pcb.hpp"
+#include "preferences.hpp"
 #include "modes.hpp"
 #include "spindle.hpp"
 #include "keypad.hpp"
 #include "tasks.hpp"
+#include "display.hpp"
 
 #define LCD_HASH_INITIAL -3845709 // Random number that's unlikely to naturally occur as an actual hash
 // To be incremented whenever a measurable improvement is made.
@@ -12,26 +15,26 @@
 // To be changed whenever a different PCB / encoder / stepper / ... design is used.
 #define HARDWARE_VERSION 4
 
-const int customCharMmCode = 0;
-const int customCharLimUpCode = 1;
-const int customCharLimDownCode = 2;
-const int customCharLimLeftCode = 3;
-const int customCharLimRightCode = 4;
-const int customCharLimUpDownCode = 5;
+const int customCharMmCode           = 0;
+const int customCharLimUpCode        = 1;
+const int customCharLimDownCode      = 2;
+const int customCharLimLeftCode      = 3;
+const int customCharLimRightCode     = 4;
+const int customCharLimUpDownCode    = 5;
 const int customCharLimLeftRightCode = 6;
 // For MEASURE_TPI, round TPI to the nearest integer if it's within this range of it.
 // E.g. 80.02tpi would be shown as 80tpi but 80.04tpi would be shown as-is.
 const float TPI_ROUND_EPSILON = 0.03;
 
-LiquidCrystal lcd(21, 48, 47, 38, 39, 40, 41, 42, 2, 1);
+LiquidCrystal lcd (21, 48, 47, 38, 39, 40, 41, 42, 2, 1);
 
-long setupIndex = 0; // Index microsof automation setup step
+long setupIndex    = 0; // Index microsof automation setup step
 long savedMoveStep = 0; // moveStep saved in Preferences
-long lcdHashLine0 = LCD_HASH_INITIAL;
-long lcdHashLine1 = LCD_HASH_INITIAL;
-long lcdHashLine2 = LCD_HASH_INITIAL;
-long lcdHashLine3 = LCD_HASH_INITIAL;
-bool splashScreen = false;
+long lcdHashLine0  = LCD_HASH_INITIAL;
+long lcdHashLine1  = LCD_HASH_INITIAL;
+long lcdHashLine2  = LCD_HASH_INITIAL;
+long lcdHashLine3  = LCD_HASH_INITIAL;
+bool splashScreen  = false;
 
 byte customCharMm[] = {
   B11010,
@@ -43,6 +46,7 @@ byte customCharMm[] = {
   B10101,
   B00000
 };
+
 byte customCharLimUp[] = {
   B11111,
   B00100,
@@ -53,6 +57,7 @@ byte customCharLimUp[] = {
   B00000,
   B00000
 };
+
 byte customCharLimDown[] = {
   B00000,
   B00100,
@@ -63,6 +68,7 @@ byte customCharLimDown[] = {
   B11111,
   B00000
 };
+
 byte customCharLimLeft[] = {
   B10000,
   B10010,
@@ -73,6 +79,7 @@ byte customCharLimLeft[] = {
   B10000,
   B00000
 };
+
 byte customCharLimRight[] = {
   B00001,
   B01001,
@@ -83,6 +90,7 @@ byte customCharLimRight[] = {
   B00001,
   B00000
 };
+
 byte customCharLimUpDown[] = {
   B11111,
   B00100,
@@ -93,6 +101,7 @@ byte customCharLimUpDown[] = {
   B11111,
   B00000
 };
+
 byte customCharLimLeftRight[] = {
   B00000,
   B10001,
@@ -106,23 +115,21 @@ byte customCharLimLeftRight[] = {
 
 // Returns number of letters printed.
 int printDeciMicrons(long deciMicrons, int precisionPointsMax) {
-  if (deciMicrons == 0) {
+  if (deciMicrons == 0) 
     return lcd.print("0");
-  }
   bool imperial = measure != MEASURE_METRIC;
   long v = imperial ? round(deciMicrons / 25.4) : deciMicrons;
   int points = 0;
-  if (v == 0 && precisionPointsMax >= 5) {
+  if (v == 0 && precisionPointsMax >= 5) 
     points = 5;
-  } else if ((v % 10) != 0 && precisionPointsMax >= 4) {
+  else if ((v % 10) != 0 && precisionPointsMax >= 4) 
     points = 4;
-  } else if ((v % 100) != 0 && precisionPointsMax >= 3) {
+  else if ((v % 100) != 0 && precisionPointsMax >= 3) 
     points = 3;
-  } else if ((v % 1000) != 0 && precisionPointsMax >= 2) {
+  else if ((v % 1000) != 0 && precisionPointsMax >= 2) 
     points = 2;
-  } else if ((v % 10000) != 0 && precisionPointsMax >= 1) {
+  else if ((v % 10000) != 0 && precisionPointsMax >= 1) 
     points = 1;
-  }
   int count = lcd.print(deciMicrons / (imperial ? 254000.0 : 10000.0), points);
   count += imperial ? lcd.print("\"") : lcd.write(customCharMmCode);
   return count;
@@ -130,13 +137,12 @@ int printDeciMicrons(long deciMicrons, int precisionPointsMax) {
 
 int printDegrees(long degrees10000) {
   int points = 0;
-  if ((degrees10000 % 100) != 0) {
+  if ((degrees10000 % 100) != 0) 
     points = 3;
-  } else if ((degrees10000 % 1000) != 0) {
+  else if ((degrees10000 % 1000) != 0) 
     points = 2;
-  } else if ((degrees10000 % 10000) != 0) {
+  else if ((degrees10000 % 10000) != 0) 
     points = 1;
-  }
   int count = lcd.print(degrees10000 / 10000.0, points);
   count += lcd.print(char(223)); // degree symbol
   return count;
@@ -144,20 +150,19 @@ int printDegrees(long degrees10000) {
 
 int printDupr(long value) {
   int count = 0;
-  if (measure != MEASURE_TPI) {
+  if (measure != MEASURE_TPI)
     count += printDeciMicrons(value, 5);
-  } else {
+  else {
     float tpi = 254000.0 / value;
-    if (abs(tpi - round(tpi)) < TPI_ROUND_EPSILON) {
+    if (abs(tpi - round(tpi)) < TPI_ROUND_EPSILON) 
       count += lcd.print(int(round(tpi)));
-    } else {
+    else {
       int tpi100 = round(tpi * 100);
       int points = 0;
-      if ((tpi100 % 10) != 0) {
+      if ((tpi100 % 10) != 0) 
         points = 2;
-      } else if ((tpi100 % 100) != 0) {
+      else if ((tpi100 % 100) != 0) 
         points = 1;
-      }
       count += lcd.print(tpi, points);
     }
     count += lcd.print("tpi");
@@ -167,39 +172,34 @@ int printDupr(long value) {
 
 void printLcdSpaces(int charIndex) {
   // Our screen has width 20.
-  for (; charIndex < 20; charIndex++) {
+  for (; charIndex < 20; charIndex++) 
     lcd.print(" ");
-  }
 }
 
 int printAxisStopDiff(Axis* a, bool addTrailingSpace) {
   int count = 0;
-  if (a->rotational) {
+  if (a->rotational) 
     count = printDegrees(getAxisStopDiffDu(a));
-  } else {
+  else
     count = printDeciMicrons(getAxisStopDiffDu(a), 3);
-  }
-  if (addTrailingSpace) {
+  if (addTrailingSpace) 
     count += lcd.print(' ');
-  }
   return count;
 }
 
 int printAxisPos(Axis* a) {
-  if (a->rotational) {
+  if (a->rotational)
     return printDegrees(getAxisPosDu(a));
-  }
   return printDeciMicrons(getAxisPosDu(a), 3);
 }
 
-
 int printAxisPosWithName(Axis* a, bool addTrailingSpace) {
-  if (!a->active || a->disabled) return 0;
+  if (!a->active || a->disabled)
+    return 0;
   int count = lcd.print(a->name);
   count += printAxisPos(a);
-  if (addTrailingSpace) {
+  if (addTrailingSpace)
     count += lcd.print(' ');
-  }
   return count;
 }
 
@@ -458,8 +458,53 @@ void updateDisplay() {
   }
 }
 
-bool needZStops() {
-  return mode == MODE_TURN || mode == MODE_FACE || mode == MODE_THREAD || mode == MODE_ELLIPSE;
+bool saveIfChanged() {
+  // Should avoid calling Preferences whenever possible to reduce memory wear and avoid ~20ms write delay that blocks interrupts.
+  if (dupr == savedDupr && starts == savedStarts && z.pos == z.savedPos && z.originPos == z.savedOriginPos && z.posGlobal == z.savedPosGlobal && z.motorPos == z.savedMotorPos && z.leftStop == z.savedLeftStop && z.rightStop == z.savedRightStop && z.disabled == z.savedDisabled &&
+      spindlePos == savedSpindlePos && spindlePosAvg == savedSpindlePosAvg && spindlePosSync == savedSpindlePosSync && savedSpindlePosGlobal == spindlePosGlobal && showAngle == savedShowAngle && showTacho == savedShowTacho && moveStep == savedMoveStep &&
+      mode == savedMode && measure == savedMeasure && x.pos == x.savedPos && x.originPos == x.savedOriginPos && x.posGlobal == x.savedPosGlobal && x.motorPos == x.savedMotorPos && x.leftStop == x.savedLeftStop && x.rightStop == x.savedRightStop && x.disabled == x.savedDisabled &&
+      a1.pos == a1.savedPos && a1.originPos == a1.savedOriginPos && a1.posGlobal == a1.savedPosGlobal && a1.motorPos == a1.savedMotorPos && a1.leftStop == a1.savedLeftStop && a1.rightStop == a1.savedRightStop && a1.disabled == a1.savedDisabled &&
+      coneRatio == savedConeRatio && turnPasses == savedTurnPasses && savedAuxForward == auxForward) return false;
+
+  Preferences pref;
+  pref.begin(PREF_NAMESPACE);
+  if (dupr != savedDupr) pref.putLong(PREF_DUPR, savedDupr = dupr);
+  if (starts != savedStarts) pref.putInt(PREF_STARTS, savedStarts = starts);
+  if (z.pos != z.savedPos) pref.putLong(PREF_POS_Z, z.savedPos = z.pos);
+  if (z.posGlobal != z.savedPosGlobal) pref.putLong(PREF_POS_GLOBAL_Z, z.savedPosGlobal = z.posGlobal);
+  if (z.originPos != z.savedOriginPos) pref.putLong(PREF_ORIGIN_POS_Z, z.savedOriginPos = z.originPos);
+  if (z.motorPos != z.savedMotorPos) pref.putLong(PREF_MOTOR_POS_Z, z.savedMotorPos = z.motorPos);
+  if (z.leftStop != z.savedLeftStop) pref.putLong(PREF_LEFT_STOP_Z, z.savedLeftStop = z.leftStop);
+  if (z.rightStop != z.savedRightStop) pref.putLong(PREF_RIGHT_STOP_Z, z.savedRightStop = z.rightStop);
+  if (z.disabled != z.savedDisabled) pref.putBool(PREF_DISABLED_Z, z.savedDisabled = z.disabled);
+  if (spindlePos != savedSpindlePos) pref.putLong(PREF_SPINDLE_POS, savedSpindlePos = spindlePos);
+  if (spindlePosAvg != savedSpindlePosAvg) pref.putLong(PREF_SPINDLE_POS_AVG, savedSpindlePosAvg = spindlePosAvg);
+  if (spindlePosSync != savedSpindlePosSync) pref.putInt(PREF_OUT_OF_SYNC, savedSpindlePosSync = spindlePosSync);
+  if (spindlePosGlobal != savedSpindlePosGlobal) pref.putLong(PREF_SPINDLE_POS_GLOBAL, savedSpindlePosGlobal = spindlePosGlobal);
+  if (showAngle != savedShowAngle) pref.putBool(PREF_SHOW_ANGLE, savedShowAngle = showAngle);
+  if (showTacho != savedShowTacho) pref.putBool(PREF_SHOW_TACHO, savedShowTacho = showTacho);
+  if (moveStep != savedMoveStep) pref.putLong(PREF_MOVE_STEP, savedMoveStep = moveStep);
+  if (mode != savedMode) pref.putInt(PREF_MODE, savedMode = mode);
+  if (measure != savedMeasure) pref.putInt(PREF_MEASURE, savedMeasure = measure);
+  if (x.pos != x.savedPos) pref.putLong(PREF_POS_X, x.savedPos = x.pos);
+  if (x.posGlobal != x.savedPosGlobal) pref.putLong(PREF_POS_GLOBAL_X, x.savedPosGlobal = x.posGlobal);
+  if (x.originPos != x.savedOriginPos) pref.putLong(PREF_ORIGIN_POS_X, x.savedOriginPos = x.originPos);
+  if (x.motorPos != x.savedMotorPos) pref.putLong(PREF_MOTOR_POS_X, x.savedMotorPos = x.motorPos);
+  if (x.leftStop != x.savedLeftStop) pref.putLong(PREF_LEFT_STOP_X, x.savedLeftStop = x.leftStop);
+  if (x.rightStop != x.savedRightStop) pref.putLong(PREF_RIGHT_STOP_X, x.savedRightStop = x.rightStop);
+  if (x.disabled != x.savedDisabled) pref.putBool(PREF_DISABLED_X, x.savedDisabled = x.disabled);
+  if (a1.pos != a1.savedPos) pref.putLong(PREF_POS_A1, a1.savedPos = a1.pos);
+  if (a1.posGlobal != a1.savedPosGlobal) pref.putLong(PREF_POS_GLOBAL_A1, a1.savedPosGlobal = a1.posGlobal);
+  if (a1.originPos != a1.savedOriginPos) pref.putLong(PREF_ORIGIN_POS_A1, a1.savedOriginPos = a1.originPos);
+  if (a1.motorPos != a1.savedMotorPos) pref.putLong(PREF_MOTOR_POS_A1, a1.savedMotorPos = a1.motorPos);
+  if (a1.leftStop != a1.savedLeftStop) pref.putLong(PREF_LEFT_STOP_A1, a1.savedLeftStop = a1.leftStop);
+  if (a1.rightStop != a1.savedRightStop) pref.putLong(PREF_RIGHT_STOP_A1, a1.savedRightStop = a1.rightStop);
+  if (a1.disabled != a1.savedDisabled) pref.putBool(PREF_DISABLED_A1, a1.savedDisabled = a1.disabled);
+  if (coneRatio != savedConeRatio) pref.putFloat(PREF_CONE_RATIO, savedConeRatio = coneRatio);
+  if (turnPasses != savedTurnPasses) pref.putInt(PREF_TURN_PASSES, savedTurnPasses = turnPasses);
+  if (auxForward != savedAuxForward) pref.putBool(PREF_AUX_FORWARD, savedAuxForward = auxForward);
+  pref.end();
+  return true;
 }
 
 void displayEstop() {
@@ -489,6 +534,28 @@ void displayEstop() {
     lcd.print("manual move");
   }
 };
+
+void taskDisplay(void *param) {
+  while (emergencyStop == ESTOP_NONE) {
+    updateDisplay();
+    // Calling Preferences.commit() blocks all interrupts for 30ms, don't call saveIfChanged() if
+    // encoder is likely to move soon.
+    unsigned long now = micros();
+    if (!stepperIsRunning(&z) && !stepperIsRunning(&x) && (now > spindleEncTime + SAVE_DELAY_US) && (now < saveTime || now > saveTime + SAVE_DELAY_US) && (now < keypadTimeUs || now > keypadTimeUs + SAVE_DELAY_US)) {
+      if (saveIfChanged())
+        saveTime = now;
+    }
+    if (beepFlag) {
+      beepFlag = false;
+      beep();
+    }
+    if (abs(z.pendingPos) > z.estopSteps || abs(x.pendingPos) > x.estopSteps) 
+      setEmergencyStop(ESTOP_POS);
+    taskYIELD();
+  }
+  displayEstop();
+  vTaskDelete(NULL);
+}
 
 void lcdSetup() {
   lcd.begin(20, 4);

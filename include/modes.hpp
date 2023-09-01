@@ -26,4 +26,14 @@ long getPassModeXStart();
 int getLastSetupIndex();
 void setModeFromTask(int value);
 
+// Used in keypad
+
+bool needZStops();
+
+// === Should this be here ??
+
+void setDupr(long value);
+void setStarts(int value);
+void setConeRatio(float value);
+
 

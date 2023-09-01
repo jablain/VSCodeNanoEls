@@ -1,11 +1,7 @@
-#include <Arduino.h>
 #include "macros.hpp"
-#include "config.hpp"
 #include "vars.hpp"
-#include "axis.hpp"
 #include "modes.hpp"
-#include "spindle.hpp"
-#include "display.hpp"
+#include "axis.hpp"
 
 Axis z;
 Axis x;
@@ -72,23 +68,6 @@ void initAxis(Axis* a, char name, bool active, bool rotational, float motorSteps
   a->step = step;
 }
 
-long stepsToDu(Axis* a, long steps) {
-  return round(steps * a->screwPitch / a->motorSteps);
-}
-
-long getAxisPosDu(Axis* a) {
-  return stepsToDu(a, a->pos + a->originPos);
-}
-
-long getAxisStopDiffDu(Axis* a) {
-  if (a->leftStop == LONG_MAX || a->rightStop == LONG_MIN) return 0;
-  return stepsToDu(a, a->leftStop - a->rightStop);
-}
-
-void markAxis0(Axis* a) {
-  a->originPos = -a->pos;
-}
-
 void updateEnable(Axis* a) {
   if (!a->disabled && (!a->needsRest || a->stepperEnableCounter > 0)) {
     if (((a == &x) && (INVERT_X_ENA)) ||
@@ -146,22 +125,4 @@ void reset() {
   showAngle = false;
   setConeRatio(1);
   auxForward = true;
-}
-
-void setDupr(long value) {
-  // Can't apply changes right away since we might be in the middle of motion logic.
-  nextDupr = value;
-  nextDuprFlag = true;
-}
-
-void setStarts(int value) {
-  // Can't apply changes right away since we might be in the middle of motion logic.
-  nextStarts = value;
-  nextStartsFlag = true;
-}
-
-void setConeRatio(float value) {
-  // Can't apply changes right away since we might be in the middle of motion logic.
-  nextConeRatio = value;
-  nextConeRatioFlag = true;
 }

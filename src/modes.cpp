@@ -41,3 +41,26 @@ void setModeFromTask(int value) {
   nextModeFlag = true;
 }
 
+bool needZStops() {
+  return mode == MODE_TURN || mode == MODE_FACE || mode == MODE_THREAD || mode == MODE_ELLIPSE;
+}
+
+void setDupr(long value) {
+  // Can't apply changes right away since we might be in the middle of motion logic.
+  nextDupr = value;
+  nextDuprFlag = true;
+}
+
+void setStarts(int value) {
+  // Can't apply changes right away since we might be in the middle of motion logic.
+  nextStarts = value;
+  nextStartsFlag = true;
+}
+
+void setConeRatio(float value) {
+  // Can't apply changes right away since we might be in the middle of motion logic.
+  nextConeRatio = value;
+  nextConeRatioFlag = true;
+}
+
+

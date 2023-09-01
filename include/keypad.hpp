@@ -19,9 +19,7 @@ extern bool buttonDownPressed;
 extern bool buttonOffPressed;
 extern bool buttonGearsPressed;
 extern bool buttonTurnPressed;
-
 extern bool opIndexAdvanceFlag; // Whether user requested to move to the next pass
-
 extern unsigned long keypadTimeUs;
 
 bool keypadSetup();

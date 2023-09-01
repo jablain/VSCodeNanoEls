@@ -1,7 +1,5 @@
 #pragma once
 
-#include <Arduino.h>
-
 struct Axis {
   SemaphoreHandle_t mutex;
 
@@ -66,15 +64,20 @@ extern Axis a1;
 void initAxis(Axis* a, char name, bool active, bool rotational, float motorSteps, float screwPitch, long speedStart, long speedManualMove,
     long acceleration, bool invertStepper, bool needsRest, long maxTravelMm, long backlashDu, int ena, int dir, int step);
 
-long stepsToDu(Axis* a, long steps);
-long getAxisPosDu(Axis* a);
-long getAxisStopDiffDu(Axis* a);
+inline long stepsToDu(Axis* a, long steps) { return round(steps * a->screwPitch / a->motorSteps); }
+inline long getAxisPosDu(Axis* a) { return stepsToDu(a, a->pos + a->originPos); }
+inline void markAxis0(Axis* a) { a->originPos = -a->pos; }
 
-void markAxis0(Axis* a);
+inline long getAxisStopDiffDu(Axis* a) {
+  if (a->leftStop == LONG_MAX || a->rightStop == LONG_MIN)
+    return 0;
+  return stepsToDu(a, a->leftStop - a->rightStop);
+}
+
+inline bool stepperIsRunning(Axis* a) {
+  unsigned long nowUs = micros();
+  return nowUs > a->stepStartUs ? nowUs - a->stepStartUs < 50000 : nowUs < 25000;
+}
 
 void updateEnable(Axis* a);
-
-void reset();
-void setDupr(long value);
-void setStarts(int value);
-void setConeRatio(float value);
+void reset(); // === Should this be here ??
