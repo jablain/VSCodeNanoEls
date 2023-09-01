@@ -2,12 +2,11 @@
 #include <Wire.h>
 #include <Adafruit_TCA8418.h>
 #include "vars.hpp"
-#include "keypad.hpp"
 #include "display.hpp"
 #include "modes.hpp"
 #include "pcb.hpp"
 #include "tasks.hpp"
-
+#include "keypad.hpp"
 
 #define B_LEFT 57
 #define B_RIGHT 37
@@ -76,9 +75,8 @@ long numpadToDeciMicrons();
 
 long getNumpadResult() {
   long result = 0;
-  for (int i = 0; i < numpadIndex; i++) {
+  for (int i = 0; i < numpadIndex; i++) 
     result += numpadDigits[i] * pow(10, numpadIndex - 1 - i);
-  }
   return result;
 }
 

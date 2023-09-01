@@ -1,3 +1,4 @@
+#include "vars.hpp"
 #include "modes.hpp"
 #include "axis.hpp"
 #include "display.hpp"

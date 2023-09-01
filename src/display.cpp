@@ -1,35 +1,37 @@
+#include <LiquidCrystal.h>
+#include "vars.hpp"
 #include "display.hpp"
 #include "modes.hpp"
 #include "spindle.hpp"
 #include "keypad.hpp"
+#include "tasks.hpp"
 
 #define LCD_HASH_INITIAL -3845709 // Random number that's unlikely to naturally occur as an actual hash
+// To be incremented whenever a measurable improvement is made.
+#define SOFTWARE_VERSION 7
+// To be changed whenever a different PCB / encoder / stepper / ... design is used.
+#define HARDWARE_VERSION 4
+
+const int customCharMmCode = 0;
+const int customCharLimUpCode = 1;
+const int customCharLimDownCode = 2;
+const int customCharLimLeftCode = 3;
+const int customCharLimRightCode = 4;
+const int customCharLimUpDownCode = 5;
+const int customCharLimLeftRightCode = 6;
+// For MEASURE_TPI, round TPI to the nearest integer if it's within this range of it.
+// E.g. 80.02tpi would be shown as 80tpi but 80.04tpi would be shown as-is.
+const float TPI_ROUND_EPSILON = 0.03;
 
 LiquidCrystal lcd(21, 48, 47, 38, 39, 40, 41, 42, 2, 1);
 
-String gcodeCommand = "";
-
-bool auxForward = true; // True for external, false for external thread
-int starts = 1; // number of starts in a multi-start thread
-
 long setupIndex = 0; // Index microsof automation setup step
-
-long moveStep = 0; // thousandth of a mm
 long savedMoveStep = 0; // moveStep saved in Preferences
-
 long lcdHashLine0 = LCD_HASH_INITIAL;
 long lcdHashLine1 = LCD_HASH_INITIAL;
 long lcdHashLine2 = LCD_HASH_INITIAL;
 long lcdHashLine3 = LCD_HASH_INITIAL;
 bool splashScreen = false;
-long dupr = 0; // pitch, tenth of a micron per rotation
-float coneRatio = 1; // In cone mode, how much X moves for 1 step of Z
-int turnPasses = 3; // In turn mode, how many turn passes to make
-long opIndex = 0; // Index of an automation operation
-
-int measure = MEASURE_METRIC; // Whether to show distances in inches
-bool showAngle = false; // Whether to show 0-359 spindle angle on screen
-bool showTacho = false; // Whether to show spindle RPM on screen
 
 byte customCharMm[] = {
   B11010,
@@ -101,7 +103,6 @@ byte customCharLimLeftRight[] = {
   B00000,
   B00000
 };
-
 
 // Returns number of letters printed.
 int printDeciMicrons(long deciMicrons, int precisionPointsMax) {
@@ -184,6 +185,14 @@ int printAxisStopDiff(Axis* a, bool addTrailingSpace) {
   return count;
 }
 
+int printAxisPos(Axis* a) {
+  if (a->rotational) {
+    return printDegrees(getAxisPosDu(a));
+  }
+  return printDeciMicrons(getAxisPosDu(a), 3);
+}
+
+
 int printAxisPosWithName(Axis* a, bool addTrailingSpace) {
   if (!a->active || a->disabled) return 0;
   int count = lcd.print(a->name);
@@ -209,13 +218,6 @@ int printNoTrailing0(float value) {
     points = 1;
   }
   return lcd.print(value, points);
-}
-
-int printAxisPos(Axis* a) {
-  if (a->rotational) {
-    return printDegrees(getAxisPosDu(a));
-  }
-  return printDeciMicrons(getAxisPosDu(a), 3);
 }
 
 int printMode() {
@@ -460,3 +462,41 @@ bool needZStops() {
   return mode == MODE_TURN || mode == MODE_FACE || mode == MODE_THREAD || mode == MODE_ELLIPSE;
 }
 
+void displayEstop() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("EMERGENCY STOP");
+  lcd.setCursor(0, 1);
+  if (emergencyStop == ESTOP_KEY) {
+    lcd.print("Key down at power-up");
+    lcd.setCursor(0, 2);
+    lcd.print("Hardware failure?");
+  } else if (emergencyStop == ESTOP_POS) {
+    lcd.print("Requested position");
+    lcd.setCursor(0, 2);
+    lcd.print("outside machine");
+  } else if (emergencyStop == ESTOP_MARK_ORIGIN) {
+    lcd.print("Unable to");
+    lcd.setCursor(0, 2);
+    lcd.print("mark origin");
+  } else if (emergencyStop == ESTOP_ON_OFF) {
+    lcd.print("Unable to");
+    lcd.setCursor(0, 2);
+    lcd.print("turn on/off");
+  } else if (emergencyStop == ESTOP_OFF_MANUAL_MOVE) {
+    lcd.print("Off during");
+    lcd.setCursor(0, 2);
+    lcd.print("manual move");
+  }
+};
+
+void lcdSetup() {
+  lcd.begin(20, 4);
+  lcd.createChar(customCharMmCode, customCharMm);
+  lcd.createChar(customCharLimLeftCode, customCharLimLeft);
+  lcd.createChar(customCharLimRightCode, customCharLimRight);
+  lcd.createChar(customCharLimUpCode, customCharLimUp);
+  lcd.createChar(customCharLimDownCode, customCharLimDown);
+  lcd.createChar(customCharLimUpDownCode, customCharLimUpDown);
+  lcd.createChar(customCharLimLeftRightCode, customCharLimLeftRight);
+};

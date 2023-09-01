@@ -42,3 +42,16 @@ bool gcodeAbsolutePositioning = true;
 bool gcodeInBrace = false;
 bool gcodeInSemicolon = false;
 bool timerAttached = false;
+
+String gcodeCommand = "";
+bool auxForward = true; // True for external, false for external thread
+int starts = 1; // number of starts in a multi-start thread
+long dupr = 0; // pitch, tenth of a micron per rotation
+float coneRatio = 1; // In cone mode, how much X moves for 1 step of Z
+int turnPasses = 3; // In turn mode, how many turn passes to make
+long opIndex = 0; // Index of an automation operation
+long moveStep = 0; // thousandth of a mm
+int measure = MEASURE_METRIC; // Whether to show distances in inches
+bool showAngle = false; // Whether to show 0-359 spindle angle on screen
+bool showTacho = false; // Whether to show spindle RPM on screen
+

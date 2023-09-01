@@ -3,7 +3,6 @@
 #include <Arduino.h>
 #include "config.hpp"
 
-
 /* Changing anything below shouldn't be needed for basic use. */
 
 // Configuration for axis connected to A1. This is uncommon. Dividing head (C) motor parameters.
@@ -37,6 +36,10 @@ const long STEPPED_ENABLE_DELAY_MS = 100; // Delay after stepper is enabled and 
 // GCode-related constants.
 const float LINEAR_INTERPOLATION_PRECISION = 0.1; // 0 < x <= 1, smaller values make for quicker G0 and G1 moves
 const long GCODE_WAIT_EPSILON_STEPS = 10;
+const long RPM_BULK = ENCODER_STEPS_INT; // Measure RPM averaged over this number of encoder pulses
+const long GCODE_FEED_DEFAULT_DU_SEC = 20000; // Default feed in du/sec in GCode mode
+const float GCODE_FEED_MIN_DU_SEC = 167; // Minimum feed in du/sec in GCode mode - F1
+
 #define MOVE_STEP_1 10000 // 1mm
 #define MOVE_STEP_2 1000 // 0.1mm
 #define MOVE_STEP_3 100 // 0.01mm
@@ -48,9 +51,10 @@ const long GCODE_WAIT_EPSILON_STEPS = 10;
 #define ESTOP_POS 2
 #define ESTOP_MARK_ORIGIN 3
 #define ESTOP_ON_OFF 4
-const long RPM_BULK = ENCODER_STEPS_INT; // Measure RPM averaged over this number of encoder pulses
-const long GCODE_FEED_DEFAULT_DU_SEC = 20000; // Default feed in du/sec in GCode mode
-const float GCODE_FEED_MIN_DU_SEC = 167; // Minimum feed in du/sec in GCode mode - F1
+#define MEASURE_METRIC 0
+#define MEASURE_INCH 1
+#define MEASURE_TPI 2
+
 extern int emergencyStop;
 extern bool beepFlag; // allows time-critical code to ask for a beep on another core
 extern long savedDupr; // dupr saved in Preferences
@@ -77,3 +81,17 @@ extern bool gcodeInBrace;
 extern bool gcodeInSemicolon;
 extern bool timerAttached;
 
+extern String gcodeCommand;
+extern bool auxForward; // True for external, false for external thread
+extern int starts; // number of starts in a multi-start thread
+extern long dupr; // pitch, tenth of a micron per rotation
+extern float coneRatio; // In cone mode, how much X moves for 1 step of Z
+extern int turnPasses; // In turn mode, how many turn passes to make
+extern long opIndex; // Index of an automation operation
+
+extern long setupIndex; // Index microsof automation setup step
+
+extern long moveStep; // thousandth of a mm
+extern int measure; // Whether to show distances in inches
+extern bool showAngle; // Whether to show 0-359 spindle angle on screen
+extern bool showTacho; // Whether to show spindle RPM on screen

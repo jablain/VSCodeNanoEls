@@ -95,31 +95,7 @@ void taskDisplay(void *param) {
     }
     taskYIELD();
   }
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("EMERGENCY STOP");
-  lcd.setCursor(0, 1);
-  if (emergencyStop == ESTOP_KEY) {
-    lcd.print("Key down at power-up");
-    lcd.setCursor(0, 2);
-    lcd.print("Hardware failure?");
-  } else if (emergencyStop == ESTOP_POS) {
-    lcd.print("Requested position");
-    lcd.setCursor(0, 2);
-    lcd.print("outside machine");
-  } else if (emergencyStop == ESTOP_MARK_ORIGIN) {
-    lcd.print("Unable to");
-    lcd.setCursor(0, 2);
-    lcd.print("mark origin");
-  } else if (emergencyStop == ESTOP_ON_OFF) {
-    lcd.print("Unable to");
-    lcd.setCursor(0, 2);
-    lcd.print("turn on/off");
-  } else if (emergencyStop == ESTOP_OFF_MANUAL_MOVE) {
-    lcd.print("Off during");
-    lcd.setCursor(0, 2);
-    lcd.print("manual move");
-  }
+  displayEstop();
   vTaskDelete(NULL);
 }
 
@@ -1479,14 +1455,7 @@ void setup() {
       DHIGH(a1.ena);
   }
 
-  lcd.begin(20, 4);
-  lcd.createChar(customCharMmCode, customCharMm);
-  lcd.createChar(customCharLimLeftCode, customCharLimLeft);
-  lcd.createChar(customCharLimRightCode, customCharLimRight);
-  lcd.createChar(customCharLimUpCode, customCharLimUp);
-  lcd.createChar(customCharLimDownCode, customCharLimDown);
-  lcd.createChar(customCharLimUpDownCode, customCharLimUpDown);
-  lcd.createChar(customCharLimLeftRightCode, customCharLimLeftRight);
+  lcdSetup();
 
   Serial.begin(115200);
 
