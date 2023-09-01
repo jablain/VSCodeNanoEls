@@ -3,13 +3,12 @@
 #include <Arduino.h>
 #include <atomic>
 #include <SPI.h>
-#include <Wire.h>
 #include <LiquidCrystal.h>
 #include <Preferences.h>
 #include "tasks.hpp"
 #include "vars.hpp"
 #include "config.hpp"
-#include "pcbpins.hpp"
+#include "pcb.hpp"
 #include "keypad.hpp"
 #include "preferences.hpp"
 #include "modes.hpp"
@@ -120,14 +119,6 @@ void taskDisplay(void *param) {
     lcd.print("Off during");
     lcd.setCursor(0, 2);
     lcd.print("manual move");
-  }
-  vTaskDelete(NULL);
-}
-
-void taskKeypad(void *param) {
-  while (emergencyStop == ESTOP_NONE) {
-    processKeypadEvent();
-    taskYIELD();
   }
   vTaskDelete(NULL);
 }
@@ -1499,20 +1490,13 @@ void setup() {
 
   Serial.begin(115200);
 
-  if (!Wire.begin(SDA, SCL)) {
-    Serial.println("I2C initialization failed");
-  } else if (!keypad.begin(TCA8418_DEFAULT_ADDR, &Wire)) {
-    Serial.println("TCA8418 key controller not found");
-  } else {
-    keypad.matrix(7, 7);
-    keypad.flush();
-  }
+  keypadSetup();
 
   // Non-time-sensitive tasks on core 0.
   xTaskCreatePinnedToCore(taskDisplay, "taskDisplay", 10000 /* stack size */, NULL, 0 /* priority */, NULL, 0 /* core */);
 
   delay(100);
-  if (keypad.available()) {
+  if (keypadAvailable()) {
     setEmergencyStop(ESTOP_KEY);
     return;
   } else {
@@ -1521,9 +1505,9 @@ void setup() {
 
   xTaskCreatePinnedToCore(taskMoveZ, "taskMoveZ", 10000 /* stack size */, NULL, 0 /* priority */, NULL, 0 /* core */);
   xTaskCreatePinnedToCore(taskMoveX, "taskMoveX", 10000 /* stack size */, NULL, 0 /* priority */, NULL, 0 /* core */);
-  if (a1.active) xTaskCreatePinnedToCore(taskMoveA1, "taskMoveA1", 10000 /* stack size */, NULL, 0 /* priority */, NULL, 0 /* core */);
+//  if (a1.active) xTaskCreatePinnedToCore(taskMoveA1, "taskMoveA1", 10000 /* stack size */, NULL, 0 /* priority */, NULL, 0 /* core */);
   xTaskCreatePinnedToCore(taskAttachInterrupts, "taskAttachInterrupts", 10000 /* stack size */, NULL, 0 /* priority */, NULL, 0 /* core */);
-  xTaskCreatePinnedToCore(taskGcode, "taskGcode", 10000 /* stack size */, NULL, 0 /* priority */, NULL, 0 /* core */);
+//  xTaskCreatePinnedToCore(taskGcode, "taskGcode", 10000 /* stack size */, NULL, 0 /* priority */, NULL, 0 /* core */);
 }
 
 int main () {

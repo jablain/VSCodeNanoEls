@@ -19,3 +19,6 @@
 #define A21 12
 #define A22 13
 #define A23 14
+
+void beep();
+void setupPins();

@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "macros.hpp"
 #include "config.hpp"
-#include "pcbpins.hpp"
+#include "pcb.hpp"
 #include "spindle.hpp"
 
 unsigned long spindleEncTime = 0; // micros() of the previous spindle update
