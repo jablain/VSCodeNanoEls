@@ -86,3 +86,4 @@ void stepperEnable(Axis* a, bool value);
 Axis* getAsyncAxis();
 void markAxisOrigin(Axis* a);
 void setDir(Axis* a, bool dir);
+long mmOrInchToAbsolutePos(Axis* a, float mmOrInch);
