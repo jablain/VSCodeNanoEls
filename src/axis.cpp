@@ -2,6 +2,7 @@
 #include "vars.hpp"
 #include "modes.hpp"
 #include "axis.hpp"
+#include "spindle.hpp"
 
 Axis z;
 Axis x;
@@ -185,5 +186,93 @@ long mmOrInchToAbsolutePos(Axis* a, float mmOrInch) {
   long part1 = a->gcodeRelativePos;
   long part2 = round(mmOrInch * scaleToDu / a->screwPitch * a->motorSteps);
   return part1 + part2;
+}
+
+Axis* getPitchAxis() {
+  return mode == MODE_FACE ? &x : &z;
+}
+
+void waitForPendingPosNear0(Axis* a) {
+  while (abs(a->pendingPos) > a->motorSteps / 3) {
+    taskYIELD();
+  }
+}
+
+void waitForPendingPos0(Axis* a) {
+  while (a->pendingPos != 0) {
+    taskYIELD();
+  }
+}
+
+// For rotational axis the moveStep of 0.1" means 0.1°.
+long getMoveStepForAxis(Axis* a) {
+  return (a->rotational && measure != MEASURE_METRIC) ? (moveStep / 25.4) : moveStep;
+}
+
+bool isContinuousStep() {
+  return moveStep == (measure == MEASURE_METRIC ? MOVE_STEP_1 : MOVE_STEP_IMP_1);
+}
+
+
+long getStepMaxSpeed(Axis* a) {
+  return isContinuousStep() ? a->speedManualMove : min(long(a->speedManualMove), abs(getMoveStepForAxis(a)) * 1000 / STEP_TIME_MS);
+}
+
+void waitForStep(Axis* a) {
+  if (isContinuousStep()) {
+    // Move continuously for default step.
+    waitForPendingPosNear0(a);
+  } else {
+    // Move with tiny pauses allowing to stop precisely.
+    a->continuous = false;
+    waitForPendingPos0(a);
+    DELAY(DELAY_BETWEEN_STEPS_MS);
+  }
+}
+
+int getAndResetPulses(Axis* a) {
+  int delta = 0;
+  if (PULSE_1_AXIS == a->name) {
+    if (pulse1Delta < -PULSE_HALF_BACKLASH) {
+      noInterrupts();
+      delta = pulse1Delta + PULSE_HALF_BACKLASH;
+      pulse1Delta = -PULSE_HALF_BACKLASH;
+      interrupts();
+    } else if (pulse1Delta > PULSE_HALF_BACKLASH) {
+      noInterrupts();
+      delta = pulse1Delta - PULSE_HALF_BACKLASH;
+      pulse1Delta = PULSE_HALF_BACKLASH;
+      interrupts();
+    }
+  } else if (PULSE_2_AXIS == a->name) {
+    if (pulse2Delta < -PULSE_HALF_BACKLASH) {
+      noInterrupts();
+      delta = pulse2Delta + PULSE_HALF_BACKLASH;
+      pulse2Delta = -PULSE_HALF_BACKLASH;
+      interrupts();
+    } else if (pulse2Delta > PULSE_HALF_BACKLASH) {
+      noInterrupts();
+      delta = pulse2Delta - PULSE_HALF_BACKLASH;
+      pulse2Delta = PULSE_HALF_BACKLASH;
+      interrupts();
+    }
+  }
+  return delta;
+}
+
+// Calculates stepper position from spindle position.
+long posFromSpindle(Axis* a, long s, bool respectStops) {
+  long newPos = s * a->motorSteps / a->screwPitch / ENCODER_STEPS_FLOAT * dupr * starts;
+
+  // Respect left/right stops.
+  if (respectStops) {
+    if (newPos < a->rightStop) {
+      newPos = a->rightStop;
+    } else if (newPos > a->leftStop) {
+      newPos = a->leftStop;
+    }
+  }
+
+  return newPos;
 }
 

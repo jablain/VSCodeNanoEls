@@ -17,93 +17,6 @@
 #include "spindle.hpp"
 #include "gcode.hpp"
 
-Axis* getPitchAxis() {
-  return mode == MODE_FACE ? &x : &z;
-}
-
-void waitForPendingPosNear0(Axis* a) {
-  while (abs(a->pendingPos) > a->motorSteps / 3) {
-    taskYIELD();
-  }
-}
-
-void waitForPendingPos0(Axis* a) {
-  while (a->pendingPos != 0) {
-    taskYIELD();
-  }
-}
-
-bool isContinuousStep() {
-  return moveStep == (measure == MEASURE_METRIC ? MOVE_STEP_1 : MOVE_STEP_IMP_1);
-}
-
-// For rotational axis the moveStep of 0.1" means 0.1°.
-long getMoveStepForAxis(Axis* a) {
-  return (a->rotational && measure != MEASURE_METRIC) ? (moveStep / 25.4) : moveStep;
-}
-
-long getStepMaxSpeed(Axis* a) {
-  return isContinuousStep() ? a->speedManualMove : min(long(a->speedManualMove), abs(getMoveStepForAxis(a)) * 1000 / STEP_TIME_MS);
-}
-
-void waitForStep(Axis* a) {
-  if (isContinuousStep()) {
-    // Move continuously for default step.
-    waitForPendingPosNear0(a);
-  } else {
-    // Move with tiny pauses allowing to stop precisely.
-    a->continuous = false;
-    waitForPendingPos0(a);
-    DELAY(DELAY_BETWEEN_STEPS_MS);
-  }
-}
-
-int getAndResetPulses(Axis* a) {
-  int delta = 0;
-  if (PULSE_1_AXIS == a->name) {
-    if (pulse1Delta < -PULSE_HALF_BACKLASH) {
-      noInterrupts();
-      delta = pulse1Delta + PULSE_HALF_BACKLASH;
-      pulse1Delta = -PULSE_HALF_BACKLASH;
-      interrupts();
-    } else if (pulse1Delta > PULSE_HALF_BACKLASH) {
-      noInterrupts();
-      delta = pulse1Delta - PULSE_HALF_BACKLASH;
-      pulse1Delta = PULSE_HALF_BACKLASH;
-      interrupts();
-    }
-  } else if (PULSE_2_AXIS == a->name) {
-    if (pulse2Delta < -PULSE_HALF_BACKLASH) {
-      noInterrupts();
-      delta = pulse2Delta + PULSE_HALF_BACKLASH;
-      pulse2Delta = -PULSE_HALF_BACKLASH;
-      interrupts();
-    } else if (pulse2Delta > PULSE_HALF_BACKLASH) {
-      noInterrupts();
-      delta = pulse2Delta - PULSE_HALF_BACKLASH;
-      pulse2Delta = PULSE_HALF_BACKLASH;
-      interrupts();
-    }
-  }
-  return delta;
-}
-
-// Calculates stepper position from spindle position.
-long posFromSpindle(Axis* a, long s, bool respectStops) {
-  long newPos = s * a->motorSteps / a->screwPitch / ENCODER_STEPS_FLOAT * dupr * starts;
-
-  // Respect left/right stops.
-  if (respectStops) {
-    if (newPos < a->rightStop) {
-      newPos = a->rightStop;
-    } else if (newPos > a->leftStop) {
-      newPos = a->leftStop;
-    }
-  }
-
-  return newPos;
-}
-
 void taskMoveZ(void *param) {
   while (emergencyStop == ESTOP_NONE) {
     int pulseDelta = getAndResetPulses(&z);
@@ -835,38 +748,7 @@ void applySettings() {
   }
 }
 
-void loop() {
-  if (emergencyStop != ESTOP_NONE) {
-    return;
-  }
-  if (xSemaphoreTake(motionMutex, 1) != pdTRUE) {
-    return;
-  }
-  applySettings();
-  processSpindlePosDelta();
-  discountFullSpindleTurns();
-  if (!isOn || dupr == 0 || spindlePosSync != 0) {
-    // None of the modes work.
-  } else if (mode == MODE_NORMAL) {
-    modeGearbox();
-  } else if (mode == MODE_TURN) {
-    modeTurn(&z, &x);
-  } else if (mode == MODE_FACE) {
-    modeTurn(&x, &z);
-  } else if (mode == MODE_CUT) {
-    modeCut();
-  } else if (mode == MODE_CONE) {
-    modeCone();
-  } else if (mode == MODE_THREAD) {
-    modeTurn(&z, &x);
-  } else if (mode == MODE_ELLIPSE) {
-    modeEllipse(&z, &x);
-  }
-  moveAxis(&z);
-  moveAxis(&x);
-  if (ACTIVE_A1) moveAxis(&a1);
-  xSemaphoreGive(motionMutex);
-}
+//===============================================================================
 
 void setup() {
   pinMode(ENC_A, INPUT_PULLUP);
@@ -955,6 +837,39 @@ void setup() {
   if (a1.active) xTaskCreatePinnedToCore(taskMoveA1, "taskMoveA1", 10000 /* stack size */, NULL, 0 /* priority */, NULL, 0 /* core */);
   xTaskCreatePinnedToCore(taskAttachInterrupts, "taskAttachInterrupts", 10000 /* stack size */, NULL, 0 /* priority */, NULL, 0 /* core */);
   xTaskCreatePinnedToCore(taskGcode, "taskGcode", 10000 /* stack size */, NULL, 0 /* priority */, NULL, 0 /* core */);
+}
+
+void loop() {
+  if (emergencyStop != ESTOP_NONE) {
+    return;
+  }
+  if (xSemaphoreTake(motionMutex, 1) != pdTRUE) {
+    return;
+  }
+  applySettings();
+  processSpindlePosDelta();
+  discountFullSpindleTurns();
+  if (!isOn || dupr == 0 || spindlePosSync != 0) {
+    // None of the modes work.
+  } else if (mode == MODE_NORMAL) {
+    modeGearbox();
+  } else if (mode == MODE_TURN) {
+    modeTurn(&z, &x);
+  } else if (mode == MODE_FACE) {
+    modeTurn(&x, &z);
+  } else if (mode == MODE_CUT) {
+    modeCut();
+  } else if (mode == MODE_CONE) {
+    modeCone();
+  } else if (mode == MODE_THREAD) {
+    modeTurn(&z, &x);
+  } else if (mode == MODE_ELLIPSE) {
+    modeEllipse(&z, &x);
+  }
+  moveAxis(&z);
+  moveAxis(&x);
+  if (ACTIVE_A1) moveAxis(&a1);
+  xSemaphoreGive(motionMutex);
 }
 
 int main () {

@@ -87,3 +87,13 @@ Axis* getAsyncAxis();
 void markAxisOrigin(Axis* a);
 void setDir(Axis* a, bool dir);
 long mmOrInchToAbsolutePos(Axis* a, float mmOrInch);
+Axis* getPitchAxis();
+void waitForPendingPosNear0(Axis* a);
+void waitForPendingPos0(Axis* a);
+// For rotational axis the moveStep of 0.1" means 0.1°.
+long getMoveStepForAxis(Axis* a);
+long getStepMaxSpeed(Axis* a);
+void waitForStep(Axis* a);
+int getAndResetPulses(Axis* a);
+// Calculates stepper position from spindle position.
+long posFromSpindle(Axis* a, long s, bool respectStops);
