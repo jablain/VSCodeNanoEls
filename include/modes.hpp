@@ -1,5 +1,7 @@
 #pragma once
 
+#include "axis.hpp"
+
 #define MODE_NORMAL 0
 #define MODE_ASYNC 2
 #define MODE_CONE 3
@@ -35,5 +37,12 @@ bool needZStops();
 void setDupr(long value);
 void setStarts(int value);
 void setConeRatio(float value);
-
-
+void setModeFromLoop(int value);
+void setIsOnFromLoop(bool on);
+// Loose the thread and mark current physical positions of
+// encoder and stepper as a new 0. To be called when dupr changes
+// or ELS is turned on/off. Without this, changing dupr will
+// result in stepper rushing across the lathe to the new position.
+// Must be called while holding motionMutex.
+void markOrigin();
+void updateAsyncTimerSettings();

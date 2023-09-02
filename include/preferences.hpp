@@ -1,43 +1,4 @@
 #pragma once
 
-#define PREF_VERSION "v"
-#define PREF_DUPR "d"
-#define PREF_POS_Z "zp"
-#define PREF_LEFT_STOP_Z "zls"
-#define PREF_RIGHT_STOP_Z "zrs"
-#define PREF_ORIGIN_POS_Z "zpo"
-#define PREF_POS_GLOBAL_Z "zpg"
-#define PREF_MOTOR_POS_Z "zpm"
-#define PREF_DISABLED_Z "zd"
-#define PREF_POS_X "xp"
-#define PREF_LEFT_STOP_X "xls"
-#define PREF_RIGHT_STOP_X "xrs"
-#define PREF_ORIGIN_POS_X "xpo"
-#define PREF_POS_GLOBAL_X "xpg"
-#define PREF_MOTOR_POS_X "xpm"
-#define PREF_DISABLED_X "xd"
-#define PREF_POS_A1 "a1p"
-#define PREF_LEFT_STOP_A1 "a1ls"
-#define PREF_RIGHT_STOP_A1 "a1rs"
-#define PREF_ORIGIN_POS_A1 "a1po"
-#define PREF_POS_GLOBAL_A1 "a1pg"
-#define PREF_MOTOR_POS_A1 "a1pm"
-#define PREF_DISABLED_A1 "a1d"
-#define PREF_SPINDLE_POS "sp"
-#define PREF_SPINDLE_POS_AVG "spa"
-#define PREF_OUT_OF_SYNC "oos"
-#define PREF_SPINDLE_POS_GLOBAL "spg"
-#define PREF_SHOW_ANGLE "ang"
-#define PREF_SHOW_TACHO "rpm"
-#define PREF_STARTS "sta"
-#define PREF_MODE "mod"
-#define PREF_MEASURE "mea"
-#define PREF_CONE_RATIO "cr"
-#define PREF_TURN_PASSES "tp"
-#define PREF_MOVE_STEP "ms"
-#define PREF_AUX_FORWARD "af"
-
-// Version of the pref storage format, should be changed when non-backward-compatible
-// changes are made to the storage logic, resulting in Preferences wipe on first start.
-#define PREFERENCES_VERSION 1
-#define PREF_NAMESPACE "h4"
+void setPreferences();
+bool savePreferences();

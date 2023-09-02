@@ -126,3 +126,57 @@ void reset() {
   setConeRatio(1);
   auxForward = true;
 }
+
+void stepperEnable(Axis* a, bool value) {
+  if (!a->needsRest || !a->active) {
+    return;
+  }
+  if (value) {
+    a->stepperEnableCounter++;
+    if (value == 1) {
+      updateEnable(a);
+    }
+  } else if (a->stepperEnableCounter > 0) {
+    a->stepperEnableCounter--;
+    if (a->stepperEnableCounter == 0) {
+      updateEnable(a);
+    }
+  }
+}
+
+Axis* getAsyncAxis() {
+  return mode == MODE_A1 ? &a1 : &z;
+}
+
+void markAxisOrigin(Axis* a) {
+  bool hasSemaphore = xSemaphoreTake(a->mutex, 10) == pdTRUE;
+  if (!hasSemaphore) {
+    beepFlag = true;
+  }
+  if (a->leftStop != LONG_MAX) {
+    a->leftStop -= a->pos;
+  }
+  if (a->rightStop != LONG_MIN) {
+    a->rightStop -= a->pos;
+  }
+  a->motorPos -= a->pos;
+  a->originPos += a->pos;
+  a->pos = 0;
+  a->fractionalPos = 0;
+  a->pendingPos = 0;
+  if (hasSemaphore) {
+    xSemaphoreGive(a->mutex);
+  }
+}
+
+void setDir(Axis* a, bool dir) {
+  // Start slow if direction changed.
+  if (a->direction != dir || !a->directionInitialized) {
+    a->speed = a->speedStart;
+    a->direction = dir;
+    a->directionInitialized = true;
+    DWRITE(a->dir, dir ^ a->invertStepper);
+    delayMicroseconds(DIRECTION_SETUP_DELAY_US);
+  }
+}
+

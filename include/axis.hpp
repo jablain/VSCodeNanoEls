@@ -1,4 +1,5 @@
 #pragma once
+#include <Arduino.h>
 
 struct Axis {
   SemaphoreHandle_t mutex;
@@ -81,3 +82,7 @@ inline bool stepperIsRunning(Axis* a) {
 
 void updateEnable(Axis* a);
 void reset(); // === Should this be here ??
+void stepperEnable(Axis* a, bool value);
+Axis* getAsyncAxis();
+void markAxisOrigin(Axis* a);
+void setDir(Axis* a, bool dir);

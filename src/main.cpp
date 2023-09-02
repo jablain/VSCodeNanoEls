@@ -4,7 +4,6 @@
 #include <atomic>
 #include <SPI.h>
 #include <LiquidCrystal.h>
-#include <Preferences.h>
 #include "tasks.hpp"
 #include "vars.hpp"
 #include "config.hpp"
@@ -88,23 +87,6 @@ int getAndResetPulses(Axis* a) {
   return delta;
 }
 
-void stepperEnable(Axis* a, bool value) {
-  if (!a->needsRest || !a->active) {
-    return;
-  }
-  if (value) {
-    a->stepperEnableCounter++;
-    if (value == 1) {
-      updateEnable(a);
-    }
-  } else if (a->stepperEnableCounter > 0) {
-    a->stepperEnableCounter--;
-    if (a->stepperEnableCounter == 0) {
-      updateEnable(a);
-    }
-  }
-}
-
 // Calculates stepper position from spindle position.
 long posFromSpindle(Axis* a, long s, bool respectStops) {
   long newPos = s * a->motorSteps / a->screwPitch / ENCODER_STEPS_FLOAT * dupr * starts;
@@ -119,71 +101,6 @@ long posFromSpindle(Axis* a, long s, bool respectStops) {
   }
 
   return newPos;
-}
-
-void markAxisOrigin(Axis* a) {
-  bool hasSemaphore = xSemaphoreTake(a->mutex, 10) == pdTRUE;
-  if (!hasSemaphore) {
-    beepFlag = true;
-  }
-  if (a->leftStop != LONG_MAX) {
-    a->leftStop -= a->pos;
-  }
-  if (a->rightStop != LONG_MIN) {
-    a->rightStop -= a->pos;
-  }
-  a->motorPos -= a->pos;
-  a->originPos += a->pos;
-  a->pos = 0;
-  a->fractionalPos = 0;
-  a->pendingPos = 0;
-  if (hasSemaphore) {
-    xSemaphoreGive(a->mutex);
-  }
-}
-
-// Loose the thread and mark current physical positions of
-// encoder and stepper as a new 0. To be called when dupr changes
-// or ELS is turned on/off. Without this, changing dupr will
-// result in stepper rushing across the lathe to the new position.
-// Must be called while holding motionMutex.
-void markOrigin() {
-  markAxisOrigin(&z);
-  markAxisOrigin(&x);
-  markAxisOrigin(&a1);
-  zeroSpindlePos();
-}
-
-void setDir(Axis* a, bool dir) {
-  // Start slow if direction changed.
-  if (a->direction != dir || !a->directionInitialized) {
-    a->speed = a->speedStart;
-    a->direction = dir;
-    a->directionInitialized = true;
-    DWRITE(a->dir, dir ^ a->invertStepper);
-    delayMicroseconds(DIRECTION_SETUP_DELAY_US);
-  }
-}
-
-unsigned int getTimerLimit() {
-  if (dupr == 0) {
-    return 65535;
-  }
-  return min(long(65535), long(1000000 / (z.motorSteps * abs(dupr) / z.screwPitch)) - 1); // 1000000/Hz - 1
-}
-
-Axis* getAsyncAxis() {
-  return mode == MODE_A1 ? &a1 : &z;
-}
-
-void updateAsyncTimerSettings() {
-  // dupr and therefore direction can change while we're in async mode.
-  setDir(getAsyncAxis(), dupr > 0);
-
-  // dupr can change while we're in async mode, keep updating timer frequency.
-  timerAlarmWrite(async_timer, getTimerLimit(), true);
-  // without this timer stops working if already above new limit
-  timerWrite(async_timer, 0);
 }
 
 void taskMoveZ(void *param) {
@@ -641,81 +558,6 @@ void taskAttachInterrupts(void *param) {
   if (PULSE_1_USE) attachInterrupt(digitalPinToInterrupt(A12), pulse1Enc, CHANGE);
   if (PULSE_2_USE) attachInterrupt(digitalPinToInterrupt(A22), pulse2Enc, CHANGE);
   vTaskDelete(NULL);
-}
-
-void setIsOnFromLoop(bool on) {
-  if (isOn && on) {
-    return;
-  }
-  if (!on) {
-    isOn = false;
-    setupIndex = 0;
-  }
-  stepperEnable(&z, on);
-  stepperEnable(&x, on);
-  stepperEnable(&a1, on);
-  markOrigin();
-  if (on) {
-    isOn = true;
-    opDuprSign = dupr >= 0 ? 1 : -1;
-    opDupr = dupr;
-    opIndex = 0;
-    opIndexAdvanceFlag = false;
-    opSubIndex = 0;
-    setupIndex = 0;
-  }
-}
-
-// Only used for async movement in ASYNC and A1 modes.
-// Keep code in this method to absolute minimum to achieve high stepper speeds.
-void IRAM_ATTR onAsyncTimer() {
-  Axis* a = getAsyncAxis();
-  if (!isOn || a->movingManually) {
-    return;
-  } else if (dupr > 0 && (a->leftStop == LONG_MAX || a->pos < a->leftStop)) {
-    if (a->pos >= a->motorPos) {
-      a->pos++;
-    }
-    a->motorPos++;
-    a->posGlobal++;
-  } else if (dupr < 0 && (a->rightStop == LONG_MIN || a->pos > a->rightStop)) {
-    if (a->pos >= a->motorPos + a->backlashSteps) {
-      a->pos--;
-    }
-    a->motorPos--;
-    a->posGlobal--;
-  } else {
-    return;
-  }
-
-  DLOW(a->step);
-  a->stepStartUs = micros();
-  delayMicroseconds(10);
-  DHIGH(a->step);
-}
-
-void setModeFromLoop(int value) {
-  if (mode == value) {
-    return;
-  }
-  if (isOn) {
-    setIsOnFromLoop(false);
-  }
-  if (mode == MODE_THREAD) {
-    setStarts(1);
-  } else if (mode == MODE_ASYNC || mode == MODE_A1) {
-    setAsyncTimerEnable(false);
-  }
-  mode = value;
-  setupIndex = 0;
-  if (mode == MODE_ASYNC || mode == MODE_A1) {
-    if (!timerAttached) {
-      timerAttached = true;
-      timerAttachInterrupt(async_timer, &onAsyncTimer, true);
-    }
-    updateAsyncTimerSettings();
-    setAsyncTimerEnable(true);
-  }
 }
 
 // Must be called while holding motionMutex.
@@ -1308,55 +1150,14 @@ void setup() {
     DLOW(A21);
   }
 
-  Preferences pref;
-  pref.begin(PREF_NAMESPACE);
-  if (pref.getInt(PREF_VERSION) != PREFERENCES_VERSION) {
-    pref.clear();
-    pref.putInt(PREF_VERSION, PREFERENCES_VERSION);
-  }
+  setPreferences ();
 
   initAxis(&z, NAME_Z, true, false, MOTOR_STEPS_Z, SCREW_Z_DU, SPEED_START_Z, SPEED_MANUAL_MOVE_Z, ACCELERATION_Z, INVERT_Z, NEEDS_REST_Z, MAX_TRAVEL_MM_Z, BACKLASH_DU_Z, Z_ENA, Z_DIR, Z_STEP);
   initAxis(&x, NAME_X, true, false, MOTOR_STEPS_X, SCREW_X_DU, SPEED_START_X, SPEED_MANUAL_MOVE_X, ACCELERATION_X, INVERT_X, NEEDS_REST_X, MAX_TRAVEL_MM_X, BACKLASH_DU_X, X_ENA, X_DIR, X_STEP);
   initAxis(&a1, NAME_A1, ACTIVE_A1, ROTARY_A1, MOTOR_STEPS_A1, SCREW_A1_DU, SPEED_START_A1, SPEED_MANUAL_MOVE_A1, ACCELERATION_A1, INVERT_A1, NEEDS_REST_A1, MAX_TRAVEL_MM_A1, BACKLASH_DU_A1, A11, A12, A13);
 
   isOn = false;
-  savedDupr = dupr = pref.getLong(PREF_DUPR);
   motionMutex = xSemaphoreCreateMutex();
-  savedStarts = starts = min(STARTS_MAX, max(1, pref.getInt(PREF_STARTS)));
-  z.savedPos = z.pos = pref.getLong(PREF_POS_Z);
-  z.savedPosGlobal = z.posGlobal = pref.getLong(PREF_POS_GLOBAL_Z);
-  z.savedOriginPos = z.originPos = pref.getLong(PREF_ORIGIN_POS_Z);
-  z.savedMotorPos = z.motorPos = pref.getLong(PREF_MOTOR_POS_Z);
-  z.savedLeftStop = z.leftStop = pref.getLong(PREF_LEFT_STOP_Z, LONG_MAX);
-  z.savedRightStop = z.rightStop = pref.getLong(PREF_RIGHT_STOP_Z, LONG_MIN);
-  z.savedDisabled = z.disabled = pref.getBool(PREF_DISABLED_Z, false);
-  x.savedPos = x.pos = pref.getLong(PREF_POS_X);
-  x.savedPosGlobal = x.posGlobal = pref.getLong(PREF_POS_GLOBAL_X);
-  x.savedOriginPos = x.originPos = pref.getLong(PREF_ORIGIN_POS_X);
-  x.savedMotorPos = x.motorPos = pref.getLong(PREF_MOTOR_POS_X);
-  x.savedLeftStop = x.leftStop = pref.getLong(PREF_LEFT_STOP_X, LONG_MAX);
-  x.savedRightStop = x.rightStop = pref.getLong(PREF_RIGHT_STOP_X, LONG_MIN);
-  x.savedDisabled = x.disabled = pref.getBool(PREF_DISABLED_X, false);
-  a1.savedPos = a1.pos = pref.getLong(PREF_POS_A1);
-  a1.savedPosGlobal = a1.posGlobal = pref.getLong(PREF_POS_GLOBAL_A1);
-  a1.savedOriginPos = a1.originPos = pref.getLong(PREF_ORIGIN_POS_A1);
-  a1.savedMotorPos = a1.motorPos = pref.getLong(PREF_MOTOR_POS_A1);
-  a1.savedLeftStop = a1.leftStop = pref.getLong(PREF_LEFT_STOP_A1, LONG_MAX);
-  a1.savedRightStop = a1.rightStop = pref.getLong(PREF_RIGHT_STOP_A1, LONG_MIN);
-  a1.savedDisabled = a1.disabled = pref.getBool(PREF_DISABLED_A1, false);
-  savedSpindlePos = spindlePos = pref.getLong(PREF_SPINDLE_POS);
-  savedSpindlePosAvg = spindlePosAvg = pref.getLong(PREF_SPINDLE_POS_AVG);
-  savedSpindlePosSync = spindlePosSync = pref.getInt(PREF_OUT_OF_SYNC);
-  savedSpindlePosGlobal = spindlePosGlobal = pref.getLong(PREF_SPINDLE_POS_GLOBAL);
-  savedShowAngle = showAngle = pref.getBool(PREF_SHOW_ANGLE);
-  savedShowTacho = showTacho = pref.getBool(PREF_SHOW_TACHO);
-  savedMoveStep = moveStep = pref.getLong(PREF_MOVE_STEP, MOVE_STEP_1);
-  setModeFromLoop(savedMode = pref.getInt(PREF_MODE));
-  savedMeasure = measure = pref.getInt(PREF_MEASURE);
-  savedConeRatio = coneRatio = pref.getFloat(PREF_CONE_RATIO, coneRatio);
-  savedTurnPasses = turnPasses = pref.getInt(PREF_TURN_PASSES, turnPasses);
-  savedAuxForward = auxForward = pref.getBool(PREF_AUX_FORWARD, true);
-  pref.end();
 
   if (!z.needsRest && !z.disabled) {
     if (INVERT_Z_ENA)
