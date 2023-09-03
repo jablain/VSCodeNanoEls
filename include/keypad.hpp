@@ -28,3 +28,6 @@ void taskKeypad(void *param);
 void setMeasure(int value);
 bool stepToFinal(Axis* a, long newPos);
 bool stepToContinuous(Axis* a, long newPos);
+String getValueString(const String& command, char letter);
+float getFloat(const String& command, char letter);
+int getInt(const String& command, char letter);

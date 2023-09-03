@@ -1,5 +1,6 @@
 #include <Adafruit_TCA8418.h>
 #include "vars.hpp"
+#include "macros.hpp"
 #include "display.hpp"
 #include "modes.hpp"
 #include "pcb.hpp"
@@ -573,11 +574,11 @@ void processKeypadEvent() {
 bool keypadSetup() {
   bool success = Wire.begin(SDA, SCL);
   if (!success) {
-    Serial.println("I2C initialization failed");
+    DPRINTLN("I2C initialization failed");
   } else {
      success = keypad.begin(TCA8418_DEFAULT_ADDR, &Wire);
      if (!success) {
-      Serial.println("TCA8418 key controller not found");
+      DPRINTLN("TCA8418 key controller not found");
      } else {
       keypad.matrix(7, 7);
       keypad.flush();
@@ -596,4 +597,29 @@ void taskKeypad(void *param) {
     taskYIELD();
   }
   vTaskDelete(NULL);
+}
+
+String getValueString(const String& command, char letter) {
+  int index = command.indexOf(letter);
+  if (index == -1) {
+    return "";
+  }
+  String valueString;
+  for (int i = index + 1; i < command.length(); i++) {
+    char c = command.charAt(i);
+    if (isDigit(c) || c == '.' || c == '-') {
+      valueString += c;
+    } else {
+      break;
+    }
+  }
+  return valueString;
+}
+
+float getFloat(const String& command, char letter) {
+  return getValueString(command, letter).toFloat();
+}
+
+int getInt(const String& command, char letter) {
+  return getValueString(command, letter).toInt();
 }

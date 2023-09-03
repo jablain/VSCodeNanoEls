@@ -3,6 +3,9 @@
 #include "config.hpp"
 #include "pcb.hpp"
 #include "spindle.hpp"
+#include "axis.hpp"
+#include "modes.hpp"
+#include "vars.hpp"
 
 unsigned long spindleEncTime = 0; // micros() of the previous spindle update
 unsigned long spindleEncTimeDiffBulk = 0; // micros() between RPM_BULK spindle updates
@@ -69,6 +72,85 @@ long spindleModulo(long value) {
     value += ENCODER_STEPS_INT;
   }
   return value;
+}
+
+void discountFullSpindleTurns() {
+  // When standing at the stop, ignore full spindle turns.
+  // This allows to avoid waiting when spindle direction reverses
+  // and reduces the chance of the skipped stepper steps since
+  // after a reverse the spindle starts slow.
+  if (dupr != 0 && !stepperIsRunning(&z) && (mode == MODE_NORMAL || mode == MODE_CONE)) {
+    int spindlePosDiff = 0;
+    if (z.pos == z.rightStop) {
+      long stopSpindlePos = spindleFromPos(&z, z.rightStop);
+      if (dupr > 0) {
+        if (spindlePos < stopSpindlePos - ENCODER_STEPS_INT) {
+          spindlePosDiff = ENCODER_STEPS_INT;
+        }
+      } else {
+        if (spindlePos > stopSpindlePos + ENCODER_STEPS_INT) {
+          spindlePosDiff = -ENCODER_STEPS_INT;
+        }
+      }
+    } else if (z.pos == z.leftStop) {
+      long stopSpindlePos = spindleFromPos(&z, z.leftStop);
+      if (dupr > 0) {
+        if (spindlePos > stopSpindlePos + ENCODER_STEPS_INT) {
+          spindlePosDiff = -ENCODER_STEPS_INT;
+        }
+      } else {
+        if (spindlePos < stopSpindlePos - ENCODER_STEPS_INT) {
+          spindlePosDiff = ENCODER_STEPS_INT;
+        }
+      }
+    }
+    if (spindlePosDiff != 0) {
+      spindlePos += spindlePosDiff;
+      spindlePosAvg += spindlePosDiff;
+    }
+  }
+}
+
+void processSpindlePosDelta() {
+  long delta = spindlePosDelta;
+  if (delta == 0) {
+    return;
+  }
+  unsigned long microsNow = micros();
+  if (showTacho || mode == MODE_GCODE) {
+    if (spindleEncTimeIndex >= RPM_BULK) {
+      spindleEncTimeDiffBulk = microsNow - spindleEncTimeAtIndex0;
+      spindleEncTimeAtIndex0 = microsNow;
+      spindleEncTimeIndex = 0;
+    }
+    spindleEncTimeIndex += abs(delta);
+  } else {
+    spindleEncTimeDiffBulk = 0;
+  }
+
+  spindlePos += delta;
+  spindlePosGlobal += delta;
+  if (spindlePosGlobal > ENCODER_STEPS_INT) {
+    spindlePosGlobal -= ENCODER_STEPS_INT;
+  } else if (spindlePosGlobal < 0) {
+    spindlePosGlobal += ENCODER_STEPS_INT;
+  }
+  if (spindlePos > spindlePosAvg) {
+    spindlePosAvg = spindlePos;
+  } else if (spindlePos < spindlePosAvg - ENCODER_BACKLASH) {
+    spindlePosAvg = spindlePos + ENCODER_BACKLASH;
+  }
+  spindleEncTime = microsNow;
+
+  if (spindlePosSync != 0) {
+    spindlePosSync += delta;
+    if (spindlePosSync % ENCODER_STEPS_INT == 0) {
+      spindlePosSync = 0;
+      Axis* a = getPitchAxis();
+      spindlePosAvg = spindlePos = spindleFromPos(a, a->pos);
+    }
+  }
+  spindlePosDelta -= delta;
 }
 
 // Called on a FALLING interrupt for the spindle rotary encoder pin.

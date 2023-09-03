@@ -5,6 +5,7 @@
 #include "spindle.hpp"
 #include "display.hpp"
 #include "modes.hpp"
+#include "macros.hpp"
 
 void setupPreferences() {
   Preferences pref;
@@ -48,5 +49,23 @@ void setupPreferences() {
   savedConeRatio = coneRatio = pref.getFloat(PREF_CONE_RATIO, coneRatio);
   savedTurnPasses = turnPasses = pref.getInt(PREF_TURN_PASSES, turnPasses);
   savedAuxForward = auxForward = pref.getBool(PREF_AUX_FORWARD, true);
+  if (!z.needsRest && !z.disabled) {
+    if (INVERT_Z_ENA)
+      DLOW(z.ena);
+    else
+      DHIGH(z.ena);
+  }
+  if (!x.needsRest && !x.disabled) {
+    if (INVERT_X_ENA)
+      DLOW(x.ena);
+    else
+      DHIGH(x.ena);
+  }
+  if (a1.active && !a1.needsRest && !a1.disabled) {
+    if (INVERT_A1_ENA)
+      DLOW(a1.ena);
+    else
+      DHIGH(a1.ena);
+  }
   pref.end();
 };

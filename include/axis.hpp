@@ -110,3 +110,4 @@ void leaveStop(Axis* a, long oldStop);
 void applyLeftStop(Axis* a);
 void applyRightStop(Axis* a);
 void moveAxis(Axis* a);
+void updateAxisSpeeds(long diffX, long diffZ, long diffA1);
