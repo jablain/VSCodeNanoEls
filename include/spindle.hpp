@@ -40,3 +40,4 @@ void IRAM_ATTR spinEnc();
 void IRAM_ATTR pulse1Enc();
 // Called on a FALLING interrupt for the second axis rotary encoder pin.
 void IRAM_ATTR pulse2Enc();
+void taskAttachInterrupts(void *param);

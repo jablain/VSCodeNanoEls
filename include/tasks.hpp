@@ -10,5 +10,5 @@ extern hw_timer_t *async_timer;
 void setEmergencyStop(int kind);
 void setAsyncTimerEnable(bool value);
 void setIsOnFromTask(bool on);
-
-
+void applySettings();
+void taskMotorControl ();

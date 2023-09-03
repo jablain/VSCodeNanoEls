@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Arduino.h>
+
 struct Axis {
   SemaphoreHandle_t mutex;
 

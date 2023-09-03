@@ -178,3 +178,12 @@ void IRAM_ATTR pulse2Enc() {
   }
 }
 
+void taskAttachInterrupts(void *param) {
+  // Attaching interrupt on core 0 to have more time on core 1 where axes are moved.
+  spindlePosDelta = 0; // Unprocessed encoder ticks.
+  attachInterrupt(digitalPinToInterrupt(ENC_A), spinEnc, FALLING);
+  if (PULSE_1_USE) attachInterrupt(digitalPinToInterrupt(A12), pulse1Enc, CHANGE);
+  if (PULSE_2_USE) attachInterrupt(digitalPinToInterrupt(A22), pulse2Enc, CHANGE);
+  vTaskDelete(NULL);
+}
+

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "axis.hpp"
+
 #define MODE_NORMAL 0
 #define MODE_ASYNC 2
 #define MODE_CONE 3
@@ -38,6 +40,13 @@ void setDupr(long value);
 void setStarts(int value);
 void setConeRatio(float value);
 void updateAsyncTimerSettings();
+void modeGearbox();
+
+
+void modeTurn(Axis* main, Axis* aux);
+void modeCone();
+void modeCut();
+void modeEllipse(Axis* main, Axis* aux);
 
 
 
