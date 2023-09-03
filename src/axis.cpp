@@ -2,6 +2,7 @@
 #include "vars.hpp"
 #include "modes.hpp"
 #include "axis.hpp"
+#include "spindle.hpp"
 
 Axis z;
 Axis x;
@@ -126,3 +127,245 @@ void reset() {
   setConeRatio(1);
   auxForward = true;
 }
+
+void stepperEnable(Axis* a, bool value) {
+  if (!a->needsRest || !a->active) {
+    return;
+  }
+  if (value) {
+    a->stepperEnableCounter++;
+    if (value == 1) {
+      updateEnable(a);
+    }
+  } else if (a->stepperEnableCounter > 0) {
+    a->stepperEnableCounter--;
+    if (a->stepperEnableCounter == 0) {
+      updateEnable(a);
+    }
+  }
+}
+
+// Loose the thread and mark current physical positions of
+// encoder and stepper as a new 0. To be called when dupr changes
+// or ELS is turned on/off. Without this, changing dupr will
+// result in stepper rushing across the lathe to the new position.
+// Must be called while holding motionMutex.
+void markOrigin() {
+  markAxisOrigin(&z);
+  markAxisOrigin(&x);
+  markAxisOrigin(&a1);
+  zeroSpindlePos();
+}
+
+void markAxisOrigin(Axis* a) {
+  bool hasSemaphore = xSemaphoreTake(a->mutex, 10) == pdTRUE;
+  if (!hasSemaphore) {
+    beepFlag = true;
+  }
+  if (a->leftStop != LONG_MAX) {
+    a->leftStop -= a->pos;
+  }
+  if (a->rightStop != LONG_MIN) {
+    a->rightStop -= a->pos;
+  }
+  a->motorPos -= a->pos;
+  a->originPos += a->pos;
+  a->pos = 0;
+  a->fractionalPos = 0;
+  a->pendingPos = 0;
+  if (hasSemaphore) {
+    xSemaphoreGive(a->mutex);
+  }
+}
+
+Axis* getAsyncAxis() {
+  return mode == MODE_A1 ? &a1 : &z;
+}
+
+void setDir(Axis* a, bool dir) {
+  // Start slow if direction changed.
+  if (a->direction != dir || !a->directionInitialized) {
+    a->speed = a->speedStart;
+    a->direction = dir;
+    a->directionInitialized = true;
+    DWRITE(a->dir, dir ^ a->invertStepper);
+    delayMicroseconds(DIRECTION_SETUP_DELAY_US);
+  }
+}
+
+Axis* getPitchAxis() {
+  return mode == MODE_FACE ? &x : &z;
+}
+
+void waitForPendingPosNear0(Axis* a) {
+  while (abs(a->pendingPos) > a->motorSteps / 3) {
+    taskYIELD();
+  }
+}
+
+void waitForPendingPos0(Axis* a) {
+  while (a->pendingPos != 0) {
+    taskYIELD();
+  }
+}
+
+// For rotational axis the moveStep of 0.1" means 0.1°.
+long getMoveStepForAxis(Axis* a) {
+  return (a->rotational && measure != MEASURE_METRIC) ? (moveStep / 25.4) : moveStep;
+}
+
+bool isContinuousStep() {
+  return moveStep == (measure == MEASURE_METRIC ? MOVE_STEP_1 : MOVE_STEP_IMP_1);
+}
+
+
+long getStepMaxSpeed(Axis* a) {
+  return isContinuousStep() ? a->speedManualMove : min(long(a->speedManualMove), abs(getMoveStepForAxis(a)) * 1000 / STEP_TIME_MS);
+}
+
+void waitForStep(Axis* a) {
+  if (isContinuousStep()) {
+    // Move continuously for default step.
+    waitForPendingPosNear0(a);
+  } else {
+    // Move with tiny pauses allowing to stop precisely.
+    a->continuous = false;
+    waitForPendingPos0(a);
+    DELAY(DELAY_BETWEEN_STEPS_MS);
+  }
+}
+
+int getAndResetPulses(Axis* a) {
+  int delta = 0;
+  if (PULSE_1_AXIS == a->name) {
+    if (pulse1Delta < -PULSE_HALF_BACKLASH) {
+      noInterrupts();
+      delta = pulse1Delta + PULSE_HALF_BACKLASH;
+      pulse1Delta = -PULSE_HALF_BACKLASH;
+      interrupts();
+    } else if (pulse1Delta > PULSE_HALF_BACKLASH) {
+      noInterrupts();
+      delta = pulse1Delta - PULSE_HALF_BACKLASH;
+      pulse1Delta = PULSE_HALF_BACKLASH;
+      interrupts();
+    }
+  } else if (PULSE_2_AXIS == a->name) {
+    if (pulse2Delta < -PULSE_HALF_BACKLASH) {
+      noInterrupts();
+      delta = pulse2Delta + PULSE_HALF_BACKLASH;
+      pulse2Delta = -PULSE_HALF_BACKLASH;
+      interrupts();
+    } else if (pulse2Delta > PULSE_HALF_BACKLASH) {
+      noInterrupts();
+      delta = pulse2Delta - PULSE_HALF_BACKLASH;
+      pulse2Delta = PULSE_HALF_BACKLASH;
+      interrupts();
+    }
+  }
+  return delta;
+}
+
+// Calculates stepper position from spindle position.
+long posFromSpindle(Axis* a, long s, bool respectStops) {
+  long newPos = s * a->motorSteps / a->screwPitch / ENCODER_STEPS_FLOAT * dupr * starts;
+
+  // Respect left/right stops.
+  if (respectStops) {
+    if (newPos < a->rightStop) {
+      newPos = a->rightStop;
+    } else if (newPos > a->leftStop) {
+      newPos = a->leftStop;
+    }
+  }
+
+  return newPos;
+}
+
+long mmOrInchToAbsolutePos(Axis* a, float mmOrInch) {
+  long scaleToDu = measure == MEASURE_METRIC ? 10000 : 254000;
+  long part1 = a->gcodeRelativePos;
+  long part2 = round(mmOrInch * scaleToDu / a->screwPitch * a->motorSteps);
+  return part1 + part2;
+}
+
+// Calculates spindle position from stepper position.
+long spindleFromPos(Axis* a, long p) {
+  return p * a->screwPitch * ENCODER_STEPS_FLOAT / a->motorSteps / (dupr * starts);
+}
+
+void leaveStop(Axis* a, long oldStop) {
+  if (mode == MODE_CONE) {
+    // To avoid rushing to a far away position if standing on limit.
+    markOrigin();
+  } else if (mode == MODE_NORMAL && a == getPitchAxis() && a->pos == oldStop) {
+    // Spindle is most likely out of sync with the stepper because
+    // it was spinning while the lead screw was on the stop.
+    spindlePosSync = spindleModulo(spindlePos - spindleFromPos(a, a->pos));
+  }
+}
+
+void applyLeftStop(Axis* a) {
+  // Accept left stop even if it's lower than pos.
+  // Stop button press processing takes time during which motor could have moved.
+  long oldStop = a->leftStop;
+  a->leftStop = a->nextLeftStop;
+  leaveStop(a, oldStop);
+}
+
+void applyRightStop(Axis* a) {
+  // Accept right stop even if it's higher than pos.
+  // Stop button press processing takes time during which motor could have moved.
+  long oldStop = a->rightStop;
+  a->rightStop = a->nextRightStop;
+  leaveStop(a, oldStop);
+}
+
+void moveAxis(Axis* a) {
+  // Most of the time a step isn't needed.
+  if (a->pendingPos == 0) {
+    if (a->speed > a->speedStart) {
+      a->speed--;
+    }
+    return;
+  }
+
+  unsigned long nowUs = micros();
+  float delayUs = 1000000.0 / a->speed;
+  if (nowUs < a->stepStartUs) a->stepStartUs = 0; // micros() overflow
+  if (nowUs < (a->stepStartUs + delayUs - 5)) {
+    // Not enough time has passed to issue this step.
+    return;
+  }
+
+  if (xSemaphoreTake(a->mutex, 1) == pdTRUE) {
+    // Check pendingPos again now that we have the mutex.
+    if (a->pendingPos != 0) {
+      bool dir = a->pendingPos > 0;
+      setDir(a, dir);
+
+      DLOW(a->step);
+      int delta = dir ? 1 : -1;
+      a->pendingPos -= delta;
+      if (dir && a->motorPos >= a->pos) {
+        a->pos++;
+      } else if (!dir && a->motorPos <= (a->pos - a->backlashSteps)) {
+        a->pos--;
+      }
+      a->motorPos += delta;
+      a->posGlobal += delta;
+
+      bool accelerate = a->continuous || a->pendingPos >= a->decelerateSteps || a->pendingPos <= -a->decelerateSteps;
+      a->speed += (accelerate ? 1 : -1) * a->acceleration * delayUs / 1000000.0;
+      if (a->speed > a->speedMax) {
+        a->speed = a->speedMax;
+      } else if (a->speed < a->speedStart) {
+        a->speed = a->speedStart;
+      }
+      a->stepStartUs = nowUs;
+
+      DHIGH(a->step);
+    }
+    xSemaphoreGive(a->mutex);
+  }
+}
+

@@ -1,7 +1,10 @@
 #include "vars.hpp"
 #include "modes.hpp"
+#include "tasks.hpp"
 #include "axis.hpp"
 #include "display.hpp"
+#include "keypad.hpp"
+#include "interrupts.hpp"
 
 volatile int mode = -1; // mode of operation (ELS, multi-start ELS, asynchronous)
 int nextMode = 0; // mode value that should be applied asap
@@ -40,6 +43,74 @@ void setModeFromTask(int value) {
   nextMode = value;
   nextModeFlag = true;
 }
+
+void setIsOnFromLoop(bool on) {
+  if (isOn && on) {
+    return;
+  }
+  if (!on) {
+    isOn = false;
+    setupIndex = 0;
+  }
+  stepperEnable(&z, on);
+  stepperEnable(&x, on);
+  stepperEnable(&a1, on);
+  markOrigin();
+  if (on) {
+    isOn = true;
+    opDuprSign = dupr >= 0 ? 1 : -1;
+    opDupr = dupr;
+    opIndex = 0;
+    opIndexAdvanceFlag = false;
+    opSubIndex = 0;
+    setupIndex = 0;
+  }
+}
+
+unsigned int getTimerLimit() {
+  if (dupr == 0) {
+    return 65535;
+  }
+  return min(long(65535), long(1000000 / (z.motorSteps * abs(dupr) / z.screwPitch)) - 1); // 1000000/Hz - 1
+}
+
+
+void updateAsyncTimerSettings() {
+  // dupr and therefore direction can change while we're in async mode.
+  setDir(getAsyncAxis(), dupr > 0);
+
+  // dupr can change while we're in async mode, keep updating timer frequency.
+  timerAlarmWrite(async_timer, getTimerLimit(), true);
+  // without this timer stops working if already above new limit
+  timerWrite(async_timer, 0);
+}
+
+
+void setModeFromLoop(int value) {
+  if (mode == value) {
+    return;
+  }
+  if (isOn) {
+    setIsOnFromLoop(false);
+  }
+  if (mode == MODE_THREAD) {
+    setStarts(1);
+  } else if (mode == MODE_ASYNC || mode == MODE_A1) {
+    setAsyncTimerEnable(false);
+  }
+  mode = value;
+  setupIndex = 0;
+  if (mode == MODE_ASYNC || mode == MODE_A1) {
+    if (!timerAttached) {
+      timerAttached = true;
+      timerAttachInterrupt(async_timer, &onAsyncTimer, true);
+    }
+    updateAsyncTimerSettings();
+    setAsyncTimerEnable(true);
+  }
+}
+
+
 
 bool needZStops() {
   return mode == MODE_TURN || mode == MODE_FACE || mode == MODE_THREAD || mode == MODE_ELLIPSE;

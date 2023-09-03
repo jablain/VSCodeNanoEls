@@ -81,3 +81,32 @@ inline bool stepperIsRunning(Axis* a) {
 
 void updateEnable(Axis* a);
 void reset(); // === Should this be here ??
+void stepperEnable(Axis* a, bool value);
+// Loose the thread and mark current physical positions of
+// encoder and stepper as a new 0. To be called when dupr changes
+// or ELS is turned on/off. Without this, changing dupr will
+// result in stepper rushing across the lathe to the new position.
+// Must be called while holding motionMutex.
+void markOrigin();
+
+void markAxisOrigin(Axis* a);
+Axis* getAsyncAxis();
+void setDir(Axis* a, bool dir);
+Axis* getPitchAxis();
+void waitForPendingPosNear0(Axis* a);
+void waitForPendingPos0(Axis* a);
+
+// For rotational axis the moveStep of 0.1" means 0.1°.
+long getMoveStepForAxis(Axis* a);
+long getStepMaxSpeed(Axis* a);
+void waitForStep(Axis* a);
+int getAndResetPulses(Axis* a);
+// Calculates stepper position from spindle position.
+long posFromSpindle(Axis* a, long s, bool respectStops);
+long mmOrInchToAbsolutePos(Axis* a, float mmOrInch);
+// Calculates spindle position from stepper position.
+long spindleFromPos(Axis* a, long p);
+void leaveStop(Axis* a, long oldStop);
+void applyLeftStop(Axis* a);
+void applyRightStop(Axis* a);
+void moveAxis(Axis* a);

@@ -25,6 +25,8 @@ long getPassModeZStart();
 long getPassModeXStart();
 int getLastSetupIndex();
 void setModeFromTask(int value);
+void setIsOnFromLoop(bool on);
+void setModeFromLoop(int value);
 
 // Used in keypad
 
@@ -35,5 +37,7 @@ bool needZStops();
 void setDupr(long value);
 void setStarts(int value);
 void setConeRatio(float value);
+void updateAsyncTimerSettings();
+
 
 

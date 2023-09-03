@@ -41,3 +41,5 @@
 // changes are made to the storage logic, resulting in Preferences wipe on first start.
 #define PREFERENCES_VERSION 1
 #define PREF_NAMESPACE "h4"
+
+void setupPreferences();
