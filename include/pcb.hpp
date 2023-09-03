@@ -1,5 +1,8 @@
 #pragma once
 
+//==============================================================================
+// Redefine PCB pin use, this must remain public
+
 #define Z_ENA 16
 #define Z_DIR 17
 #define Z_STEP 18
@@ -20,5 +23,5 @@
 #define A22 13
 #define A23 14
 
-void beep();
-void setupPins();
+inline void beep() { tone(BUZZ, 1000, 500); }
+void setupPCB();
