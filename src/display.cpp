@@ -540,14 +540,17 @@ void taskDisplay(void *param) {
     updateDisplay();
     // Calling Preferences.commit() blocks all interrupts for 30ms, don't call saveIfChanged() if
     // encoder is likely to move soon.
-    unsigned long now = micros();
+    unsigned long now = micros(); 
     if (!stepperIsRunning(&z) && // Z axis is not moving
         !stepperIsRunning(&x) && // X axis is not moving why ?? What about A1 ??
-        (now > spindleEncTime + SAVE_DELAY_US) && // The last encoder change was more than 5 seconds ago
-        (now < saveTime || now > saveTime + SAVE_DELAY_US) && // Data was saved in the future ?? Or it has been more than 5 seconds since the last save
-         (now < kpadTimeUs() || now > kpadTimeUs() + SAVE_DELAY_US)) { // A keypress was pressed in the future ?? or more than 5 seconds ago
-      if (saveIfChanged())
+        (now > ((spindleEncTime + SAVE_DELAY_US) % 4294967296)) && // The last encoder change was more than 5 seconds ago
+        (now > ((saveTime + SAVE_DELAY_US) % 4294967296)) && // Has it been more than 5 seconds since the last save
+        (now > ((kpadTimeUs() + SAVE_DELAY_US) % 4294967296))) { // was the last key pressed more than 5 seconds ago
+      if (saveIfChanged()) {
         saveTime = now;
+        powerOnBeep();
+        powerOnBeep();
+      }
     }
     if (beepFlag) {
       beepFlag = false;
