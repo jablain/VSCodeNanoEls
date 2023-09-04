@@ -242,7 +242,7 @@ void modeTurn(Axis* main, Axis* aux) {
     stepToFinal(aux, auxPos);
     if (main->pos == mainPos && aux->pos == auxPos) {
       setIsOnFromLoop(false);
-      beep();
+      warningBeep();
     }
   }
 }
@@ -344,7 +344,7 @@ void modeCut() {
     }
   } else {
     setIsOnFromLoop(false);
-    beep();
+    warningBeep();
   }
 }
 
@@ -416,7 +416,7 @@ void modeEllipse(Axis* main, Axis* aux) {
     stepToFinal(aux, auxStartStop);
     if (aux->pos == auxStartStop) {
       setIsOnFromLoop(false);
-      beep();
+      warningBeep();
     }
   }
 }

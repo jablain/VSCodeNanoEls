@@ -3,6 +3,24 @@
 #include "vars.hpp"
 #include "pcb.hpp"
 
+void powerOnBeep(){
+  tone(BUZZ, 500, 100);
+  DELAY(100);
+  tone(BUZZ, 750, 100);
+  DELAY(100);
+  tone(BUZZ, 1000, 100);
+};
+
+void warningBeep(){
+  tone(BUZZ, 1500, 500);
+  DELAY(500);
+  tone(BUZZ, 500, 500);
+};
+
+void doneBeep(){
+  tone(BUZZ, 1000, 500);
+};
+
 void setupPCB(){
   pinMode(ENC_A, INPUT_PULLUP);
   pinMode(ENC_B, INPUT_PULLUP);

@@ -1,4 +1,5 @@
 #pragma once
+#include <Arduino.h>
 
 //==============================================================================
 // Redefine PCB pin use, this must remain public
@@ -23,5 +24,7 @@
 #define A22 13
 #define A23 14
 
-inline void beep() { tone(BUZZ, 1000, 500); }
+void powerOnBeep();
+void warningBeep();
+void doneBeep();
 void setupPCB();

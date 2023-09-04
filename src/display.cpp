@@ -547,7 +547,7 @@ void taskDisplay(void *param) {
     }
     if (beepFlag) {
       beepFlag = false;
-      beep();
+      warningBeep();
     }
     if (abs(z.pendingPos) > z.estopSteps || abs(x.pendingPos) > x.estopSteps) 
       setEmergencyStop(ESTOP_POS);

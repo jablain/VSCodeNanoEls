@@ -101,7 +101,7 @@ void buttonOnOffPress(bool on) {
   resetMillis = millis();
   bool missingZStops = needZStops() && (z.leftStop == LONG_MAX || z.rightStop == LONG_MIN);
   if (on && isPassMode() && (missingZStops || x.leftStop == LONG_MAX || x.rightStop == LONG_MIN)) {
-    beep();
+    warningBeep();
   } else if (!isOn && on && setupIndex < getLastSetupIndex()) {
     // Move to the next setup step.
     setupIndex++;
@@ -155,7 +155,7 @@ void resetNumpad() {
 
 void setTurnPasses(int value) {
   if (isOn) {
-    beep();
+    warningBeep();
   } else {
     turnPasses = value;
   }
@@ -220,12 +220,12 @@ bool processNumpadResult(int keyCode) {
   if (!isOn && (keyCode == B_LEFT || keyCode == B_RIGHT || keyCode == B_UP || keyCode == B_DOWN || (mode == MODE_A1 && (keyCode == B_MODE_GEARS || keyCode == B_MODE_TURN)))) {
     if (pos < a->rightStop) {
       pos = a->rightStop;
-      beep();
+      warningBeep();
     } else if (pos > a->leftStop) {
       pos = a->leftStop;
-      beep();
+      warningBeep();
     } else if (abs(pos - a->pos) > a->estopSteps) {
-      beep();
+      warningBeep();
       return true;
     }
     a->speedMax = a->speedManualMove;
@@ -249,7 +249,7 @@ bool processNumpadResult(int keyCode) {
     if (newDu > 0) {
       moveStep = newDu;
     } else {
-      beep();
+      warningBeep();
     }
     return true;
   }
@@ -439,7 +439,7 @@ void processKeypadEvent() {
 
   if (mode == MODE_GCODE && isOn) {
     // Not allowed to interfere other than turn off.
-    if (isPress && keyCode != B_OFF) beep();
+    if (isPress && keyCode != B_OFF) warningBeep();
     return;
   }
 
