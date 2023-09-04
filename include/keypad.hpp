@@ -15,7 +15,6 @@ bool in_Numpad();
 long getNumpadResult();
 float numpadToConeRatio();
 long numpadToDeciMicrons();
-bool setupKeypad();
-void taskKeypad(void *param);
 void setopIndexAdvanceFlag (bool); // Is the user requesting to move to the next pass
 bool getopIndexAdvanceFlag (); // Has the user requested to move to the next pass
+void setupKeypad();

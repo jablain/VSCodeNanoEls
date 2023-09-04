@@ -113,9 +113,8 @@ void discountFullSpindleTurns() {
 
 void processSpindlePosDelta() {
   long delta = spindlePosDelta;
-  if (delta == 0) {
+  if (delta == 0) 
     return;
-  }
   unsigned long microsNow = micros();
   if (showTacho || mode == MODE_GCODE) {
     if (spindleEncTimeIndex >= RPM_BULK) {
@@ -124,22 +123,19 @@ void processSpindlePosDelta() {
       spindleEncTimeIndex = 0;
     }
     spindleEncTimeIndex += abs(delta);
-  } else {
+  } else 
     spindleEncTimeDiffBulk = 0;
-  }
 
   spindlePos += delta;
   spindlePosGlobal += delta;
-  if (spindlePosGlobal > ENCODER_STEPS_INT) {
+  if (spindlePosGlobal > ENCODER_STEPS_INT) 
     spindlePosGlobal -= ENCODER_STEPS_INT;
-  } else if (spindlePosGlobal < 0) {
+  else if (spindlePosGlobal < 0) 
     spindlePosGlobal += ENCODER_STEPS_INT;
-  }
-  if (spindlePos > spindlePosAvg) {
+  if (spindlePos > spindlePosAvg) 
     spindlePosAvg = spindlePos;
-  } else if (spindlePos < spindlePosAvg - ENCODER_BACKLASH) {
+  else if (spindlePos < spindlePosAvg - ENCODER_BACKLASH)
     spindlePosAvg = spindlePos + ENCODER_BACKLASH;
-  }
   spindleEncTime = microsNow;
 
   if (spindlePosSync != 0) {
@@ -154,9 +150,7 @@ void processSpindlePosDelta() {
 }
 
 // Called on a FALLING interrupt for the spindle rotary encoder pin.
-void IRAM_ATTR spinEnc() {
-  spindlePosDelta += DREAD(ENC_B) ? -1 : 1;
-}
+void IRAM_ATTR spinEnc() { spindlePosDelta += DREAD(ENC_B) ? -1 : 1; }
 
 // Called on a FALLING interrupt for the first axis rotary encoder pin.
 void IRAM_ATTR pulse1Enc() {
