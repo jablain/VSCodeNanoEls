@@ -55,13 +55,13 @@ unsigned long resetMillis = 0;
 
 // Most buttons we only have "down" handling, holding them has no effect.
 // Buttons with special "holding" logic have flags below.
-bool buttonLeftPressed = false;
+bool buttonLeftPressed  = false;
 bool buttonRightPressed = false;
-bool buttonUpPressed = false;
-bool buttonDownPressed = false;
-bool buttonOffPressed = false;
+bool buttonUpPressed    = false;
+bool buttonDownPressed  = false;
+bool buttonOffPressed   = false;
 bool buttonGearsPressed = false;
-bool buttonTurnPressed = false;
+bool buttonTurnPressed  = false;
 bool opIndexAdvanceFlag = false; // Whether user requested to move to the next pass
 
 bool inNumpad = false;
@@ -70,6 +70,50 @@ int numpadIndex = 0;
 long getNumpadResult();
 float numpadToConeRatio();
 long numpadToDeciMicrons();
+
+void setopIndexAdvanceFlag (bool value){ // User is requesting to move to the next pass
+  opIndexAdvanceFlag = value;
+};
+
+bool getopIndexAdvanceFlag () { // Has the user requested to move to the next pass
+  return opIndexAdvanceFlag;
+};
+
+bool btnLeftPressed(){
+  return buttonLeftPressed;
+}
+
+bool btnRightPressed(){
+  return buttonRightPressed;
+}
+
+bool btnUpPressed(){
+  return buttonUpPressed;
+}
+
+bool btnDownPressed(){
+  return buttonDownPressed;
+}
+
+bool btnOffPressed(){
+  return buttonOffPressed;
+}
+
+bool btnGearsPressed(){
+  return buttonGearsPressed;
+}
+
+bool btnTurnPressed(){
+  return buttonTurnPressed;
+}
+
+bool opIdxAdvanceFlag(){ // Whether user requested to move to the next pass
+  return opIndexAdvanceFlag;
+};
+
+unsigned long kpadTimeUs(){
+  return keypadTimeUs;
+};
 
 bool in_Numpad() {
   return inNumpad;

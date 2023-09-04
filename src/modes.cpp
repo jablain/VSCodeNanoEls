@@ -63,7 +63,7 @@ void setIsOnFromLoop(bool on) {
     opDuprSign = dupr >= 0 ? 1 : -1;
     opDupr = dupr;
     opIndex = 0;
-    opIndexAdvanceFlag = false;
+    setopIndexAdvanceFlag (false);
     opSubIndex = 0;
     setupIndex = 0;
   }
@@ -182,8 +182,8 @@ void modeTurn(Axis* main, Axis* aux) {
       opSubIndex = 0;
     }
   } else if (opIndex <= turnPasses * starts) {
-    if (opIndexAdvanceFlag && (opIndex + starts) < turnPasses * starts) {
-      opIndexAdvanceFlag = false;
+    if (getopIndexAdvanceFlag() && (opIndex + starts) < turnPasses * starts) {
+      setopIndexAdvanceFlag (false);
       opIndex += starts;
     }
     long auxPos = auxEndStop - (auxEndStop - auxStartStop) / turnPasses * (turnPasses - ceil(opIndex / float(starts)));

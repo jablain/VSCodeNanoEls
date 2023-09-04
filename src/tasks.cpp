@@ -111,8 +111,8 @@ void applySettings() {
 void taskMoveZ(void *param) {
   while (emergencyStop == ESTOP_NONE) {
     int pulseDelta = getAndResetPulses(&z);
-    bool left = buttonLeftPressed;
-    bool right = buttonRightPressed;
+    bool left = btnLeftPressed();
+    bool right = btnRightPressed();
     if (!left && !right && pulseDelta == 0) {
       taskYIELD();
       continue;
@@ -163,7 +163,7 @@ void taskMoveZ(void *param) {
           }
           DELAY(200);
         }
-      } while (left ? buttonLeftPressed : buttonRightPressed);
+      } while (left ? btnLeftPressed() : btnRightPressed());
     } else {
       z.speedMax = getStepMaxSpeed(&z);
       int delta = 0;
@@ -187,7 +187,7 @@ void taskMoveZ(void *param) {
         z.speedMax = getStepMaxSpeed(&z);
         stepToContinuous(&z, posCopy + delta);
         waitForStep(&z);
-      } while (delta != 0 && (left ? buttonLeftPressed : buttonRightPressed));
+      } while (delta != 0 && (left ? btnLeftPressed() : btnRightPressed()));
       z.continuous = false;
       waitForPendingPos0(&z);
       if (isOn && mode == MODE_CONE) {
@@ -215,8 +215,8 @@ void taskMoveZ(void *param) {
 void taskMoveX(void *param) {
   while (emergencyStop == ESTOP_NONE) {
     int pulseDelta = getAndResetPulses(&x);
-    bool up = buttonUpPressed || pulseDelta > 0;
-    bool down = buttonDownPressed || pulseDelta < 0;
+    bool up = btnUpPressed() || pulseDelta > 0;
+    bool down = btnDownPressed() || pulseDelta < 0;
     if (!up && !down) {
       taskYIELD();
       continue;
@@ -249,7 +249,7 @@ void taskMoveX(void *param) {
       stepToContinuous(&x, posCopy + delta);
       waitForStep(&x);
       pulseDelta = getAndResetPulses(&x);
-    } while (delta != 0 && (pulseDelta != 0 || (up ? buttonUpPressed : buttonDownPressed)));
+    } while (delta != 0 && (pulseDelta != 0 || (up ? btnUpPressed() : btnDownPressed())));
     x.continuous = false;
     waitForPendingPos0(&x);
     if (isOn && mode == MODE_CONE) {
@@ -271,8 +271,8 @@ void taskMoveX(void *param) {
 
 void taskMoveA1(void *param) {
   while (emergencyStop == ESTOP_NONE) {
-    bool plus = buttonTurnPressed;
-    bool minus = buttonGearsPressed;
+    bool plus = btnTurnPressed();
+    bool minus = btnGearsPressed();
     if (mode != MODE_A1 || (!plus && !minus)) {
       taskYIELD();
       continue;
@@ -297,7 +297,7 @@ void taskMoveA1(void *param) {
       }
       stepToContinuous(&a1, posCopy + delta);
       waitForStep(&a1);
-    } while (plus ? buttonTurnPressed : buttonGearsPressed);
+    } while (plus ? btnTurnPressed() : btnGearsPressed());
     a1.continuous = false;
     waitForPendingPos0(&a1);
     // Restore async direction.
