@@ -39,4 +39,5 @@ void setupPCB(){
     pinMode(A23, INPUT);
     DLOW(A21);
   }
+  Serial.begin(115200); // Used to send GCode and (maybe for debugging).
 };

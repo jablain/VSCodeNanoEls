@@ -22,7 +22,7 @@ extern bool buttonTurnPressed;
 extern bool opIndexAdvanceFlag; // Whether user requested to move to the next pass
 extern unsigned long keypadTimeUs;
 
-bool keypadSetup();
+bool setupKeypad();
 bool keypadAvailable();
 void taskKeypad(void *param);
 void setMeasure(int value);

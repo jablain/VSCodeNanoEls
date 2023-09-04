@@ -11,5 +11,5 @@ extern long savedMoveStep; // moveStep saved in Preferences
 
 void updateDisplay();
 void displayEstop();
-void lcdSetup();
+void setupDisplay();
 void taskDisplay(void *param);

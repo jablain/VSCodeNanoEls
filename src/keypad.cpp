@@ -571,24 +571,24 @@ void processKeypadEvent() {
   }
 }
 
-bool keypadSetup() {
-  bool success = Wire.begin(SDA, SCL);
-  if (!success) {
-    DPRINTLN("I2C initialization failed");
-  } else {
-     success = keypad.begin(TCA8418_DEFAULT_ADDR, &Wire);
-     if (!success) {
-      DPRINTLN("TCA8418 key controller not found");
-     } else {
-      keypad.matrix(7, 7);
-      keypad.flush();
-     }
- }
- return success;
-};
-
 bool keypadAvailable(){
   return (keypad.available() > 0);
+};
+
+bool setupKeypad() {
+  if ((!Wire.begin(SDA, SCL)) ||
+      (!keypad.begin(TCA8418_DEFAULT_ADDR, &Wire))) {
+    DPRINTLN("I2C initialization failed");
+    return false;
+  };
+  keypad.matrix(7, 7);
+  keypad.flush();
+  delay(100);
+  if (keypadAvailable()) {
+    setEmergencyStop(ESTOP_KEY);
+    return false;
+  };
+  return true;
 };
 
 void taskKeypad(void *param) {

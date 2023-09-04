@@ -55,3 +55,6 @@ int measure = MEASURE_METRIC; // Whether to show distances in inches
 bool showAngle = false; // Whether to show 0-359 spindle angle on screen
 bool showTacho = false; // Whether to show spindle RPM on screen
 
+void setupVars() {
+  motionMutex = xSemaphoreCreateMutex(); // controls blocks of code where variables affecting the motion loop() are changed
+};

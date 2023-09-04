@@ -557,7 +557,7 @@ void taskDisplay(void *param) {
   vTaskDelete(NULL);
 }
 
-void lcdSetup() {
+void setupDisplay() {
   lcd.begin(20, 4);
   lcd.createChar(customCharMmCode, customCharMm);
   lcd.createChar(customCharLimLeftCode, customCharLimLeft);

@@ -11,4 +11,9 @@ void setEmergencyStop(int kind);
 void setAsyncTimerEnable(bool value);
 void setIsOnFromTask(bool on);
 void applySettings();
-void taskMotorControl ();
+
+void taskMoveZ(void *param);
+void taskMoveX(void *param);
+void taskMoveA1(void *param);
+void taskGcode(void *param);
+void loop();
