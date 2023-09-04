@@ -1,12 +1,4 @@
 #pragma once
-// Used by display
-
-extern bool inNumpad;
-extern long getNumpadResult();
-extern float numpadToConeRatio();
-extern long numpadToDeciMicrons();
-
-// Used by main
 
 // Most buttons we only have "down" handling, holding them has no effect.
 // Buttons with special "holding" logic have flags below.
@@ -20,5 +12,9 @@ extern bool buttonTurnPressed;
 extern bool opIndexAdvanceFlag; // Whether user requested to move to the next pass
 extern unsigned long keypadTimeUs;
 
+bool in_Numpad();
+long getNumpadResult();
+float numpadToConeRatio();
+long numpadToDeciMicrons();
 bool setupKeypad();
 void taskKeypad(void *param);

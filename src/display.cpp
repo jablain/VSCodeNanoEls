@@ -349,7 +349,7 @@ void updateDisplay() {
     gcodeCommandHash += gcodeCommand.charAt(i);
   }
   long newHashLine3 = z.pos + (showAngle ? spindlePos : -1) + (showTacho ? rpm : -2) + measure + (numpadResult > 0 ? numpadResult : -1) + mode * 5 + dupr +
-      (mode == MODE_CONE ? round(coneRatio * 10000) : 0) + turnPasses + opIndex + setupIndex + (isOn ? 139 : -117) + (inNumpad ? 10 : 0) + (auxForward ? 17 : -31) +
+      (mode == MODE_CONE ? round(coneRatio * 10000) : 0) + turnPasses + opIndex + setupIndex + (isOn ? 139 : -117) + (in_Numpad() ? 10 : 0) + (auxForward ? 17 : -31) +
       (z.leftStop == LONG_MAX ? 123 : z.leftStop) + (z.rightStop == LONG_MIN ? 1234 : z.rightStop) +
       (x.leftStop == LONG_MAX ? 1235 : x.leftStop) + (x.rightStop == LONG_MIN ? 123456 : x.rightStop) + gcodeCommandHash +
       (mode == MODE_A1 ? a1.pos + a1.originPos + (a1.leftStop == LONG_MAX ? 123 : a1.leftStop) + (a1.rightStop == LONG_MIN ? 1234 : a1.rightStop) + a1.disabled : 0) + x.pos + z.pos;
@@ -357,7 +357,7 @@ void updateDisplay() {
     lcdHashLine3 = newHashLine3;
     charIndex = 0;
     lcd.setCursor(0, 3);
-    if (mode == MODE_A1 && !inNumpad) {
+    if (mode == MODE_A1 && !in_Numpad()) {
       if (a1.leftStop != LONG_MAX && a1.rightStop != LONG_MIN) {
         charIndex += lcd.write(customCharLimUpDownCode);
         charIndex += lcd.print(" ");
@@ -374,7 +374,7 @@ void updateDisplay() {
     } else if (isPassMode()) {
       bool missingZStops = needZStops() && (z.leftStop == LONG_MAX || z.rightStop == LONG_MIN);
       bool missingStops = missingZStops || x.leftStop == LONG_MAX || x.rightStop == LONG_MIN;
-      if (!inNumpad && missingStops) {
+      if (!in_Numpad() && missingStops) {
         charIndex += lcd.print(needZStops() ? "Set all stops" : "Set X stops");
       } else if (numpadResult != 0 && setupIndex == 1) {
         long passes = min(PASSES_MAX, numpadResult);
@@ -433,7 +433,7 @@ void updateDisplay() {
       }
     }
 
-    if (charIndex == 0 && inNumpad) { // Also show for 0 input to allow setting limits to 0.
+    if (charIndex == 0 && in_Numpad()) { // Also show for 0 input to allow setting limits to 0.
       charIndex += lcd.print("Use ");
       charIndex += printDupr(numpadToDeciMicrons());
       charIndex += lcd.print("?");

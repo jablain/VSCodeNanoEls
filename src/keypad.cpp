@@ -71,6 +71,10 @@ long getNumpadResult();
 float numpadToConeRatio();
 long numpadToDeciMicrons();
 
+bool in_Numpad() {
+  return inNumpad;
+};
+
 long getNumpadResult() {
   long result = 0;
   for (int i = 0; i < numpadIndex; i++) 
