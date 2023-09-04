@@ -1,6 +1,4 @@
 #pragma once
-#include "axis.hpp"
-
 // Used by display
 
 extern bool inNumpad;
@@ -23,11 +21,4 @@ extern bool opIndexAdvanceFlag; // Whether user requested to move to the next pa
 extern unsigned long keypadTimeUs;
 
 bool setupKeypad();
-bool keypadAvailable();
 void taskKeypad(void *param);
-void setMeasure(int value);
-bool stepToFinal(Axis* a, long newPos);
-bool stepToContinuous(Axis* a, long newPos);
-String getValueString(const String& command, char letter);
-float getFloat(const String& command, char letter);
-int getInt(const String& command, char letter);

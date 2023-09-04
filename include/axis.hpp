@@ -63,6 +63,12 @@ extern Axis z;
 extern Axis x;
 extern Axis a1;
 
+void setMeasure(int value);
+bool stepToFinal(Axis* a, long newPos);
+bool stepToContinuous(Axis* a, long newPos);
+void setLeftStop(Axis* a, long value);
+void setRightStop(Axis* a, long value);
+
 void initAxis(Axis* a, char name, bool active, bool rotational, float motorSteps, float screwPitch, long speedStart, long speedManualMove,
     long acceleration, bool invertStepper, bool needsRest, long maxTravelMm, long backlashDu, int ena, int dir, int step);
 

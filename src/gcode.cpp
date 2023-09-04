@@ -6,6 +6,31 @@
 #include "modes.hpp"
 #include "tasks.hpp"
 
+String getValueString(const String& command, char letter) {
+  int index = command.indexOf(letter);
+  if (index == -1) {
+    return "";
+  }
+  String valueString;
+  for (int i = index + 1; i < command.length(); i++) {
+    char c = command.charAt(i);
+    if (isDigit(c) || c == '.' || c == '-') {
+      valueString += c;
+    } else {
+      break;
+    }
+  }
+  return valueString;
+}
+
+float getFloat(const String& command, char letter) {
+  return getValueString(command, letter).toFloat();
+}
+
+int getInt(const String& command, char letter) {
+  return getValueString(command, letter).toInt();
+}
+
 void gcodeWaitEpsilon(int epsilon) {
   while (abs(x.pendingPos) > epsilon || abs(z.pendingPos) > epsilon || abs(a1.pendingPos) > epsilon) {
     taskYIELD();

@@ -161,41 +161,6 @@ void setTurnPasses(int value) {
   }
 }
 
-void setLeftStop(Axis* a, long value) {
-  // Can't apply changes right away since we might be in the middle of motion logic.
-  a->nextLeftStop = value;
-  a->nextLeftStopFlag = true;
-}
-
-void setRightStop(Axis* a, long value) {
-  // Can't apply changes right away since we might be in the middle of motion logic.
-  a->nextRightStop = value;
-  a->nextRightStopFlag = true;
-}
-
-bool stepTo(Axis* a, long newPos, bool continuous) {
-  if (xSemaphoreTake(a->mutex, 10) == pdTRUE) {
-    a->continuous = continuous;
-    if (newPos == a->pos) {
-      a->pendingPos = 0;
-    } else {
-      a->pendingPos = newPos - a->motorPos - (newPos > a->pos ? 0 : a->backlashSteps);
-    }
-    xSemaphoreGive(a->mutex);
-    return true;
-  }
-  return false;
-}
-// Moves the stepper so that the tool is located at the newPos.
-bool stepToContinuous(Axis* a, long newPos) {
-  return stepTo(a, newPos, true);
-}
-
-bool stepToFinal(Axis* a, long newPos) {
-  return stepTo(a, newPos, false);
-}
-
-
 bool processNumpadResult(int keyCode) {
   long newDu = numpadToDeciMicrons();
   float newConeRatio = numpadToConeRatio();
@@ -347,15 +312,6 @@ long normalizePitch(long pitch) {
   }
   return round(pitch / scale) * scale;
 }
-
-void setMeasure(int value) {
-  if (measure == value) {
-    return;
-  }
-  measure = value;
-  moveStep = measure == MEASURE_METRIC ? MOVE_STEP_1 : MOVE_STEP_IMP_1;
-}
-
 
 void buttonPlusMinusPress(bool plus) {
   // Mutex is aquired in setDupr() and setStarts().
@@ -571,10 +527,6 @@ void processKeypadEvent() {
   }
 }
 
-bool keypadAvailable(){
-  return (keypad.available() > 0);
-};
-
 bool setupKeypad() {
   if ((!Wire.begin(SDA, SCL)) ||
       (!keypad.begin(TCA8418_DEFAULT_ADDR, &Wire))) {
@@ -584,7 +536,7 @@ bool setupKeypad() {
   keypad.matrix(7, 7);
   keypad.flush();
   delay(100);
-  if (keypadAvailable()) {
+  if (keypad.available() > 0) {
     setEmergencyStop(ESTOP_KEY);
     return false;
   };
@@ -597,29 +549,4 @@ void taskKeypad(void *param) {
     taskYIELD();
   }
   vTaskDelete(NULL);
-}
-
-String getValueString(const String& command, char letter) {
-  int index = command.indexOf(letter);
-  if (index == -1) {
-    return "";
-  }
-  String valueString;
-  for (int i = index + 1; i < command.length(); i++) {
-    char c = command.charAt(i);
-    if (isDigit(c) || c == '.' || c == '-') {
-      valueString += c;
-    } else {
-      break;
-    }
-  }
-  return valueString;
-}
-
-float getFloat(const String& command, char letter) {
-  return getValueString(command, letter).toFloat();
-}
-
-int getInt(const String& command, char letter) {
-  return getValueString(command, letter).toInt();
 }

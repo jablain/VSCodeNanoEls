@@ -9,6 +9,48 @@ Axis z;
 Axis x;
 Axis a1;
 
+void setMeasure(int value) {
+  if (measure == value) {
+    return;
+  }
+  measure = value;
+  moveStep = measure == MEASURE_METRIC ? MOVE_STEP_1 : MOVE_STEP_IMP_1;
+}
+
+bool stepTo(Axis* a, long newPos, bool continuous) {
+  if (xSemaphoreTake(a->mutex, 10) == pdTRUE) {
+    a->continuous = continuous;
+    if (newPos == a->pos) {
+      a->pendingPos = 0;
+    } else {
+      a->pendingPos = newPos - a->motorPos - (newPos > a->pos ? 0 : a->backlashSteps);
+    }
+    xSemaphoreGive(a->mutex);
+    return true;
+  }
+  return false;
+}
+// Moves the stepper so that the tool is located at the newPos.
+bool stepToContinuous(Axis* a, long newPos) {
+  return stepTo(a, newPos, true);
+}
+
+bool stepToFinal(Axis* a, long newPos) {
+  return stepTo(a, newPos, false);
+}
+
+void setLeftStop(Axis* a, long value) {
+  // Can't apply changes right away since we might be in the middle of motion logic.
+  a->nextLeftStop = value;
+  a->nextLeftStopFlag = true;
+}
+
+void setRightStop(Axis* a, long value) {
+  // Can't apply changes right away since we might be in the middle of motion logic.
+  a->nextRightStop = value;
+  a->nextRightStopFlag = true;
+}
+
 void initAxis(Axis* a, char name, bool active, bool rotational, float motorSteps, float screwPitch, long speedStart, long speedManualMove,
     long acceleration, bool invertStepper, bool needsRest, long maxTravelMm, long backlashDu, int ena, int dir, int step) {
   a->mutex = xSemaphoreCreateMutex();
