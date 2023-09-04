@@ -12,7 +12,6 @@
 void setup() {
   setupPCB();
   setupAxis();
-  setupVars();
   setupPreferences ();
   setupDisplay();
   setupKeypad();

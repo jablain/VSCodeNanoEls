@@ -95,5 +95,3 @@ extern long moveStep; // thousandth of a mm
 extern int measure; // Whether to show distances in inches
 extern bool showAngle; // Whether to show 0-359 spindle angle on screen
 extern bool showTacho; // Whether to show spindle RPM on screen
-
-void setupVars();

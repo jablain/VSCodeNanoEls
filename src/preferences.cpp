@@ -8,6 +8,7 @@
 #include "macros.hpp"
 
 void setupPreferences() {
+  motionMutex = xSemaphoreCreateMutex(); // controls blocks of code where variables affecting the motion loop() are changed
   Preferences pref;
   pref.begin(PREF_NAMESPACE);
   if (pref.getInt(PREF_VERSION) != PREFERENCES_VERSION) {
