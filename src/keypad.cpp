@@ -124,10 +124,8 @@ void buttonOnOffPress(bool on) {
 }
 
 void buttonOffRelease() {
-  if (millis() - resetMillis > 3000) {
+  if (millis() - resetMillis > 3000) 
     reset();
-    splashScreen = true;
-  }
 }
 
 void numpadPress(int digit) {

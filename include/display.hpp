@@ -1,8 +1,6 @@
 #pragma once
 
-extern bool splashScreen;
-
+extern bool splashScreen; // === Should this be here ??
 void updateDisplay();
-void displayEstop();
+void estopDisplay();
 void setupDisplay();
-void taskDisplay(void *param);

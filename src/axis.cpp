@@ -4,6 +4,7 @@
 #include "axis.hpp"
 #include "spindle.hpp"
 #include "pcb.hpp"
+#include "display.hpp"
 
 Axis z;
 Axis x;
@@ -169,6 +170,7 @@ void reset() {
   showAngle = false;
   setConeRatio(1);
   auxForward = true;
+  splashScreen = true;
 }
 
 void stepperEnable(Axis* a, bool value) {
