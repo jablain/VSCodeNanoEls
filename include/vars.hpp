@@ -39,6 +39,7 @@ const long GCODE_WAIT_EPSILON_STEPS = 10;
 const long RPM_BULK = ENCODER_STEPS_INT; // Measure RPM averaged over this number of encoder pulses
 const long GCODE_FEED_DEFAULT_DU_SEC = 20000; // Default feed in du/sec in GCode mode
 const float GCODE_FEED_MIN_DU_SEC = 167; // Minimum feed in du/sec in GCode mode - F1
+const long PASSES_MAX = 999; // No more turn or face passes than this
 
 #define MOVE_STEP_1 10000 // 1mm
 #define MOVE_STEP_2 1000 // 0.1mm
@@ -58,6 +59,7 @@ const float GCODE_FEED_MIN_DU_SEC = 167; // Minimum feed in du/sec in GCode mode
 extern int emergencyStop;
 extern bool beepFlag; // allows time-critical code to ask for a beep on another core
 extern long savedDupr; // dupr saved in Preferences
+extern long savedMoveStep; // moveStep saved in Preferences
 extern long nextDupr; // dupr value that should be applied asap
 extern bool nextDuprFlag; // whether nextDupr requires attention
 extern SemaphoreHandle_t motionMutex; // controls blocks of code where variables affecting the motion loop() are changed
@@ -80,6 +82,16 @@ extern bool gcodeAbsolutePositioning;
 extern bool gcodeInBrace;
 extern bool gcodeInSemicolon;
 extern bool timerAttached;
+extern long savedSpindlePosAvg; // spindlePosAvg saved in Preferences
+extern long savedSpindlePos; // spindlePos value saved in Preferences
+extern int savedSpindlePosSync; // spindlePosSync saved in Preferences
+extern long savedSpindlePosGlobal; // spindlePosGlobal saved in Preferences
+extern bool savedShowAngle; // showAngle value saved in Preferences
+extern bool savedShowTacho; // showTacho value saved in Preferences
+extern bool showAngle; // Whether to show 0-359 spindle angle on screen
+extern bool showTacho; // Whether to show spindle RPM on screen
+extern int shownRpm;
+extern unsigned long shownRpmTime; // micros() when shownRpm was set
 
 extern String gcodeCommand;
 extern bool auxForward; // True for external, false for external thread

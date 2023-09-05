@@ -29,7 +29,6 @@ const float TPI_ROUND_EPSILON = 0.03;
 LiquidCrystal lcd (21, 48, 47, 38, 39, 40, 41, 42, 2, 1);
 
 long setupIndex    = 0; // Index microsof automation setup step
-long savedMoveStep = 0; // moveStep saved in Preferences
 long lcdHashLine0  = LCD_HASH_INITIAL;
 long lcdHashLine1  = LCD_HASH_INITIAL;
 long lcdHashLine2  = LCD_HASH_INITIAL;
