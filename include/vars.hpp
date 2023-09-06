@@ -30,12 +30,9 @@ const long PULSE_HALF_BACKLASH = 2; // Prevents spurious reverses when moving us
 const long DUPR_MAX = 254000; // No more than 1 inch pitch
 const int STARTS_MAX = 124; // No more than 124-start thread
 const long SAFE_DISTANCE_DU = 5000; // Step back 0.5mm from the material when moving between cuts in automated modes
-const long SAVE_DELAY_US = 5000000; // Wait 5s after last save and last change of saveable data before saving again
 const long DIRECTION_SETUP_DELAY_US = 5; // Stepper driver needs some time to adjust to direction change
 const long STEPPED_ENABLE_DELAY_MS = 100; // Delay after stepper is enabled and before issuing steps
 // GCode-related constants.
-const float LINEAR_INTERPOLATION_PRECISION = 0.1; // 0 < x <= 1, smaller values make for quicker G0 and G1 moves
-const long GCODE_WAIT_EPSILON_STEPS = 10;
 const long RPM_BULK = ENCODER_STEPS_INT; // Measure RPM averaged over this number of encoder pulses
 const long GCODE_FEED_DEFAULT_DU_SEC = 20000; // Default feed in du/sec in GCode mode
 const float GCODE_FEED_MIN_DU_SEC = 167; // Minimum feed in du/sec in GCode mode - F1
@@ -58,36 +55,24 @@ const long PASSES_MAX = 999; // No more turn or face passes than this
 
 extern int emergencyStop;
 extern bool beepFlag; // allows time-critical code to ask for a beep on another core
-extern long savedDupr; // dupr saved in Preferences
-extern long savedMoveStep; // moveStep saved in Preferences
 extern long nextDupr; // dupr value that should be applied asap
 extern bool nextDuprFlag; // whether nextDupr requires attention
 extern SemaphoreHandle_t motionMutex; // controls blocks of code where variables affecting the motion loop() are changed
-extern int savedStarts; // starts saved in Preferences
 extern int nextStarts; // number of starts that should be used asap
 extern bool nextStartsFlag; // whether nextStarts requires attention
-extern unsigned long saveTime; // micros() of the previous Prefs write
-extern int savedMeasure; // measure value saved in Preferences
-extern float savedConeRatio; // value of coneRatio saved in Preferences
 extern float nextConeRatio; // coneRatio that should be applied asap
 extern bool nextConeRatioFlag; // whether nextConeRatio requires attention
-extern int savedTurnPasses; // value of turnPasses saved in Preferences
-extern bool savedAuxForward; // value of auxForward saved in Preferences
 extern long opSubIndex; // Sub-index of an automation operation
 extern int opDuprSign; // 1 if dupr was positive when operation started, -1 if negative
 extern long opDupr; // dupr that the multi-pass operation started with
+
 extern long gcodeFeedDuPerSec;
 extern bool gcodeInitialized;
 extern bool gcodeAbsolutePositioning;
 extern bool gcodeInBrace;
 extern bool gcodeInSemicolon;
+
 extern bool timerAttached;
-extern long savedSpindlePosAvg; // spindlePosAvg saved in Preferences
-extern long savedSpindlePos; // spindlePos value saved in Preferences
-extern int savedSpindlePosSync; // spindlePosSync saved in Preferences
-extern long savedSpindlePosGlobal; // spindlePosGlobal saved in Preferences
-extern bool savedShowAngle; // showAngle value saved in Preferences
-extern bool savedShowTacho; // showTacho value saved in Preferences
 extern bool showAngle; // Whether to show 0-359 spindle angle on screen
 extern bool showTacho; // Whether to show spindle RPM on screen
 extern int shownRpm;
@@ -107,3 +92,4 @@ extern long moveStep; // thousandth of a mm
 extern int measure; // Whether to show distances in inches
 extern bool showAngle; // Whether to show 0-359 spindle angle on screen
 extern bool showTacho; // Whether to show spindle RPM on screen
+extern unsigned long keypadTimeUs;

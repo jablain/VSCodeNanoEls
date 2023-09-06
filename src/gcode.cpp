@@ -6,6 +6,9 @@
 #include "modes.hpp"
 #include "tasks.hpp"
 
+const float LINEAR_INTERPOLATION_PRECISION = 0.1; // 0 < x <= 1, smaller values make for quicker G0 and G1 moves
+const long GCODE_WAIT_EPSILON_STEPS = 10;
+
 String getValueString(const String& command, char letter) {
   int index = command.indexOf(letter);
   if (index == -1) {

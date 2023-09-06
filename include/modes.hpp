@@ -16,7 +16,6 @@
 extern volatile int mode; // mode of operation (ELS, multi-start ELS, asynchronous)
 extern int nextMode; // mode value that should be applied asap
 extern bool nextModeFlag; // whether nextMode needs attention
-extern int savedMode; // mode saved in Preferences
 
 extern bool isOn;
 extern bool nextIsOn; // isOn value that should be applied asap

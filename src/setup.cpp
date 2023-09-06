@@ -1,6 +1,7 @@
 // https://github.com/kachurovskiy/nanoels
 
 #include "pcb.hpp"
+#include "macros.hpp"
 #include "keypad.hpp"
 #include "tasks.hpp"
 #include "vars.hpp"
@@ -11,8 +12,29 @@
 
 void setup() {
   setupPCB();
+  // VVV Warning : The following code must run in this call order VVV
   setupAxis();
-  setupPreferences ();
+  readPreferences ();
+  // This code must run after setupAxis()
+  if (!z.needsRest && !z.disabled) {
+    if (INVERT_Z_ENA)
+      DLOW(z.ena);
+    else
+      DHIGH(z.ena);
+  }
+  if (!x.needsRest && !x.disabled) {
+    if (INVERT_X_ENA)
+      DLOW(x.ena);
+    else
+      DHIGH(x.ena);
+  }
+  if (a1.active && !a1.needsRest && !a1.disabled) {
+    if (INVERT_A1_ENA)
+      DLOW(a1.ena);
+    else
+      DHIGH(a1.ena);
+  }
+  // ^^^ Warning : The following code must run in this call order ^^^
   setupDisplay();
   setupKeypad();
   xTaskCreatePinnedToCore(taskMoveZ, "taskMoveZ", 10000 /* stack size */, NULL, 0 /* priority */, NULL, 0 /* core */);

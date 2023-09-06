@@ -50,7 +50,6 @@
 
 Adafruit_TCA8418 keypad;
 
-unsigned long keypadTimeUs = 0;
 unsigned long resetMillis = 0;
 
 // Most buttons we only have "down" handling, holding them has no effect.
@@ -73,18 +72,19 @@ long numpadToDeciMicrons();
 
 // User is requesting to move to the next pass
 void setopIndexAdvanceFlag (bool value){ opIndexAdvanceFlag = value;};
+
 // Has the user requested to move to the next pass
 bool getopIndexAdvanceFlag () { return opIndexAdvanceFlag;};
-bool btnLeftPressed(){return buttonLeftPressed;}
+
+bool btnLeftPressed() {return buttonLeftPressed;}
 bool btnRightPressed(){return buttonRightPressed;}
-bool btnUpPressed(){return buttonUpPressed;}
-bool btnDownPressed(){return buttonDownPressed;}
-bool btnOffPressed(){return buttonOffPressed;}
+bool btnUpPressed()   {return buttonUpPressed;}
+bool btnDownPressed() {return buttonDownPressed;}
+bool btnOffPressed()  {return buttonOffPressed;}
 bool btnGearsPressed(){return buttonGearsPressed;}
-bool btnTurnPressed(){return buttonTurnPressed; }
+bool btnTurnPressed() {return buttonTurnPressed; }
 // Whether user requested to move to the next pass
 bool opIdxAdvanceFlag(){ return opIndexAdvanceFlag; };
-unsigned long kpadTimeUs() { return keypadTimeUs; };
 bool in_Numpad() {return inNumpad;};
 float numpadToConeRatio() { return getNumpadResult() / 100000.0;}
 
@@ -400,12 +400,10 @@ void buttonMeasurePress() {
 void buttonReversePress() { setDupr(-dupr); }
 
 void processKeypadEvent() {
-  if (keypad.available() == 0) // Nothing to do
-    return;
-  int event   = keypad.getEvent();
-  int keyCode = event; bitWrite(keyCode, 7, 0);
-  bool isPress = bitRead(event, 7) == 1; // 1 - press, 0 - release
+  int event    = keypad.getEvent();
   keypadTimeUs = micros();
+  int keyCode  = event; bitWrite(keyCode, 7, 0);
+  bool isPress = bitRead(event, 7) == 1; // 1 - press, 0 - release
 
   // Off button always gets handled.
   if (keyCode == B_OFF) {
@@ -500,7 +498,8 @@ void processKeypadEvent() {
 
 void taskKeypad(void *param) {
   while (emergencyStop == ESTOP_NONE) {
-    processKeypadEvent();
+    if (keypad.available() != 0)
+      processKeypadEvent();
     taskYIELD();
   }
   vTaskDelete(NULL);

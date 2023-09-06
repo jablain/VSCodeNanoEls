@@ -9,7 +9,6 @@ bool btnDownPressed();
 bool btnOffPressed();
 bool btnGearsPressed();
 bool btnTurnPressed();
-unsigned long kpadTimeUs();
 
 bool in_Numpad();
 long getNumpadResult();

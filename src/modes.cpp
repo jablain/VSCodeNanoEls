@@ -11,7 +11,6 @@
 volatile int mode = -1; // mode of operation (ELS, multi-start ELS, asynchronous)
 int nextMode = 0; // mode value that should be applied asap
 bool nextModeFlag = false; // whether nextMode needs attention
-int savedMode = -1; // mode saved in Preferences
 
 bool isOn = false;
 bool nextIsOn; // isOn value that should be applied asap
@@ -89,17 +88,14 @@ void updateAsyncTimerSettings() {
 
 
 void setModeFromLoop(int value) {
-  if (mode == value) {
+  if (mode == value)
     return;
-  }
-  if (isOn) {
+  if (isOn)
     setIsOnFromLoop(false);
-  }
-  if (mode == MODE_THREAD) {
+  if (mode == MODE_THREAD) 
     setStarts(1);
-  } else if (mode == MODE_ASYNC || mode == MODE_A1) {
+  else if (mode == MODE_ASYNC || mode == MODE_A1) 
     setAsyncTimerEnable(false);
-  }
   mode = value;
   setupIndex = 0;
   if (mode == MODE_ASYNC || mode == MODE_A1) {

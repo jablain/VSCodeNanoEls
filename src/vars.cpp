@@ -19,21 +19,13 @@
 #define ESTOP_ON_OFF 4
 int emergencyStop = 0;
 bool beepFlag = false; // allows time-critical code to ask for a beep on another core
-long savedDupr = 0; // dupr saved in Preferences
 long nextDupr = dupr; // dupr value that should be applied asap
 bool nextDuprFlag = false; // whether nextDupr requires attention
 SemaphoreHandle_t motionMutex; // controls blocks of code where variables affecting the motion loop() are changed
-int savedStarts = 0; // starts saved in Preferences
 int nextStarts = starts; // number of starts that should be used asap
 bool nextStartsFlag = false; // whether nextStarts requires attention
-unsigned long saveTime = 0; // micros() of the previous Prefs write
-long savedMoveStep = 0; // moveStep saved in Preferences
-int savedMeasure = MEASURE_METRIC; // measure value saved in Preferences
-float savedConeRatio = 0; // value of coneRatio saved in Preferences
 float nextConeRatio = 0; // coneRatio that should be applied asap
 bool nextConeRatioFlag = false; // whether nextConeRatio requires attention
-int savedTurnPasses = 0; // value of turnPasses saved in Preferences
-bool savedAuxForward = false; // value of auxForward saved in Preferences
 long opSubIndex = 0; // Sub-index of an automation operation
 int opDuprSign = 1; // 1 if dupr was positive when operation started, -1 if negative
 long opDupr = 0; // dupr that the multi-pass operation started with
@@ -55,12 +47,6 @@ long moveStep = 0; // thousandth of a mm
 int measure = MEASURE_METRIC; // Whether to show distances in inches
 bool showAngle = false; // Whether to show 0-359 spindle angle on screen
 bool showTacho = false; // Whether to show spindle RPM on screen
-
-long savedSpindlePosAvg = 0; // spindlePosAvg saved in Preferences
-long savedSpindlePos = 0; // spindlePos value saved in Preferences
-int savedSpindlePosSync = 0; // spindlePosSync saved in Preferences
-long savedSpindlePosGlobal = 0; // spindlePosGlobal saved in Preferences
-bool savedShowAngle = false; // showAngle value saved in Preferences
-bool savedShowTacho = false; // showTacho value saved in Preferences
 int shownRpm = 0;
 unsigned long shownRpmTime = 0; // micros() when shownRpm was set
+unsigned long keypadTimeUs = 0;

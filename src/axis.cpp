@@ -174,9 +174,8 @@ void reset() {
 }
 
 void stepperEnable(Axis* a, bool value) {
-  if (!a->needsRest || !a->active) {
+  if (!a->needsRest || !a->active) 
     return;
-  }
   if (value) {
     a->stepperEnableCounter++;
     if (value == 1) {
@@ -184,9 +183,8 @@ void stepperEnable(Axis* a, bool value) {
     }
   } else if (a->stepperEnableCounter > 0) {
     a->stepperEnableCounter--;
-    if (a->stepperEnableCounter == 0) {
+    if (a->stepperEnableCounter == 0) 
       updateEnable(a);
-    }
   }
 }
 
