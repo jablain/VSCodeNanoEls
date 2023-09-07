@@ -52,15 +52,14 @@ void setRightStop(Axis* a, long value) {
   a->nextRightStopFlag = true;
 }
 
-void initAxis(Axis* a, char name, bool active, bool rotational, float motorSteps, float screwPitch, long speedStart, long speedManualMove,
-    long acceleration, bool invertStepper, bool needsRest, long maxTravelMm, long backlashDu, int ena, int dir, int step) {
+void initAxis(Axis* a, axisParam* param) {
   a->mutex = xSemaphoreCreateMutex();
 
-  a->name = name;
-  a->active = active;
-  a->rotational = rotational;
-  a->motorSteps = motorSteps;
-  a->screwPitch = screwPitch;
+  a->name = param->name;
+  a->active = param->active;
+  a->rotational = param->rotational;
+  a->motorSteps = param->motorSteps;
+  a->screwPitch = param->screwPitch;
 
   a->pos = 0;
   a->savedPos = 0;
@@ -82,14 +81,14 @@ void initAxis(Axis* a, char name, bool active, bool rotational, float motorSteps
   a->savedRightStop = 0;
   a->nextRightStopFlag = false;
 
-  a->speed = speedStart;
-  a->speedStart = speedStart;
+  a->speed = param->speedStart;
+  a->speedStart = param->speedStart;
   a->speedMax = LONG_MAX;
-  a->speedManualMove = speedManualMove;
-  a->acceleration = acceleration;
+  a->speedManualMove = param->speedManualMove;
+  a->acceleration = param->acceleration;
   a->decelerateSteps = 0;
-  long s = speedManualMove;
-  while (s > speedStart) {
+  long s = param->speedManualMove;
+  while (s > param->speedStart) {
     a->decelerateSteps++;
     s -= a->acceleration / float(s);
   }
@@ -101,16 +100,16 @@ void initAxis(Axis* a, char name, bool active, bool rotational, float motorSteps
   a->disabled = false;
   a->savedDisabled = false;
 
-  a->invertStepper = invertStepper;
-  a->needsRest = needsRest;
+  a->invertStepper = param->invertStepper;
+  a->needsRest = param->needsRest;
   a->movingManually = false;
-  a->estopSteps = maxTravelMm * 10000 / a->screwPitch * a->motorSteps;
-  a->backlashSteps = backlashDu * a->motorSteps / a->screwPitch;
+  a->estopSteps = param->maxTravelMm * 10000 / a->screwPitch * a->motorSteps;
+  a->backlashSteps = param->backlashDu * a->motorSteps / a->screwPitch;
   a->gcodeRelativePos = 0;
 
-  a->ena = ena;
-  a->dir = dir;
-  a->step = step;
+  a->ena = param->enaPin;
+  a->dir = param->dirPin;
+  a->step = param->stepPin;
 }
 
 void updateEnable(Axis* a) {
@@ -442,8 +441,58 @@ void updateAxisSpeeds(long diffX, long diffZ, long diffA1) {
   a1.speedMax = sec > 0 ? absC / sec : a1.speedManualMove;
 }
 
+
 void setupAxis() {
-  initAxis(&z, NAME_Z, true, false, MOTOR_STEPS_Z, SCREW_Z_DU, SPEED_START_Z, SPEED_MANUAL_MOVE_Z, ACCELERATION_Z, INVERT_Z, NEEDS_REST_Z, MAX_TRAVEL_MM_Z, BACKLASH_DU_Z, Z_ENA, Z_DIR, Z_STEP);
-  initAxis(&x, NAME_X, true, false, MOTOR_STEPS_X, SCREW_X_DU, SPEED_START_X, SPEED_MANUAL_MOVE_X, ACCELERATION_X, INVERT_X, NEEDS_REST_X, MAX_TRAVEL_MM_X, BACKLASH_DU_X, X_ENA, X_DIR, X_STEP);
-  initAxis(&a1, NAME_A1, ACTIVE_A1, ROTARY_A1, MOTOR_STEPS_A1, SCREW_A1_DU, SPEED_START_A1, SPEED_MANUAL_MOVE_A1, ACCELERATION_A1, INVERT_A1, NEEDS_REST_A1, MAX_TRAVEL_MM_A1, BACKLASH_DU_A1, A11, A12, A13);
+
+  axisParam zp = {NAME_Z, //
+                  true,
+                  false,
+                  MOTOR_STEPS_Z,
+                  SCREW_Z_DU,
+                  SPEED_START_Z,
+                  SPEED_MANUAL_MOVE_Z,
+                  ACCELERATION_Z,
+                  INVERT_Z,
+                  NEEDS_REST_Z,
+                  MAX_TRAVEL_MM_Z,
+                  BACKLASH_DU_Z,
+                  Z_ENA,
+                  Z_DIR,
+                  Z_STEP};
+  initAxis(&z, &zp);
+
+  axisParam xp = {NAME_X,
+               true,
+               false,
+               MOTOR_STEPS_X,
+               SCREW_X_DU,
+               SPEED_START_X,
+               SPEED_MANUAL_MOVE_X,
+               ACCELERATION_X,
+               INVERT_X,
+               NEEDS_REST_X,
+               MAX_TRAVEL_MM_X,
+               BACKLASH_DU_X,
+               X_ENA,
+               X_DIR,
+               X_STEP};
+  initAxis(&x, &xp);
+
+  axisParam a1p = {NAME_A1,
+                   ACTIVE_A1,
+                   ROTARY_A1,
+                   MOTOR_STEPS_A1,
+                   SCREW_A1_DU,
+                   SPEED_START_A1,
+                   SPEED_MANUAL_MOVE_A1,
+                   ACCELERATION_A1,
+                   INVERT_A1,
+                   NEEDS_REST_A1,
+                   MAX_TRAVEL_MM_A1,
+                   BACKLASH_DU_A1,
+                   A11,
+                   A12,
+                   A13};
+
+  initAxis(&a1, &a1p);
 }

@@ -2,6 +2,24 @@
 
 #include <Arduino.h>
 
+struct axisParam {
+  char  name;
+  bool  active;
+  bool  rotational;
+  float motorSteps;
+  float screwPitch;
+  long  speedStart;
+  long  speedManualMove;
+  long  acceleration;
+  bool  invertStepper;
+  bool  needsRest;
+  long  maxTravelMm;
+  long  backlashDu;
+  int   enaPin;
+  int   dirPin;
+  int   stepPin;
+};
+
 struct Axis {
   SemaphoreHandle_t mutex;
 
@@ -60,7 +78,6 @@ struct Axis {
   bool savedDisabled;
 };
 
-
 extern Axis z;
 extern Axis x;
 extern Axis a1;
@@ -71,8 +88,7 @@ bool stepToContinuous(Axis* a, long newPos);
 void setLeftStop(Axis* a, long value);
 void setRightStop(Axis* a, long value);
 
-void initAxis(Axis* a, char name, bool active, bool rotational, float motorSteps, float screwPitch, long speedStart, long speedManualMove,
-    long acceleration, bool invertStepper, bool needsRest, long maxTravelMm, long backlashDu, int ena, int dir, int step);
+void initAxis(Axis* a, axisParam* param);
 
 inline long stepsToDu(Axis* a, long steps) { return round(steps * a->screwPitch / a->motorSteps); }
 inline long getAxisPosDu(Axis* a) { return stepsToDu(a, a->pos + a->originPos); }
