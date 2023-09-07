@@ -26,9 +26,9 @@ void IRAM_ATTR onAsyncTimer() {
     return;
   }
 
-  DLOW(a->step);
+  DLOW(a->stepPin);
   a->stepStartUs = micros();
   delayMicroseconds(10);
-  DHIGH(a->step);
+  DHIGH(a->stepPin);
 }
 

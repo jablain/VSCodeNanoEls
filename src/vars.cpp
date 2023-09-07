@@ -50,3 +50,11 @@ bool showTacho = false; // Whether to show spindle RPM on screen
 int shownRpm = 0;
 unsigned long shownRpmTime = 0; // micros() when shownRpm was set
 unsigned long keypadTimeUs = 0;
+
+void setMeasure(int value) {
+  if (measure == value) 
+    return;
+  measure = value;
+  moveStep = measure == MEASURE_METRIC ? MOVE_STEP_1 : MOVE_STEP_IMP_1;
+}
+

@@ -18,21 +18,21 @@ void setup() {
   // This code must run after setupAxis()
   if (!z.needsRest && !z.disabled) {
     if (INVERT_Z_ENA)
-      DLOW(z.ena);
+      DLOW(z.enaPin);
     else
-      DHIGH(z.ena);
+      DHIGH(z.enaPin);
   }
   if (!x.needsRest && !x.disabled) {
     if (INVERT_X_ENA)
-      DLOW(x.ena);
+      DLOW(x.enaPin);
     else
-      DHIGH(x.ena);
+      DHIGH(x.enaPin);
   }
   if (a1.active && !a1.needsRest && !a1.disabled) {
     if (INVERT_A1_ENA)
-      DLOW(a1.ena);
+      DLOW(a1.enaPin);
     else
-      DHIGH(a1.ena);
+      DHIGH(a1.enaPin);
   }
   // ^^^ Warning : The following code must run in this call order ^^^
   setupDisplay();

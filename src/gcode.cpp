@@ -48,6 +48,32 @@ void gcodeWaitStop() {
   gcodeWaitEpsilon(0);
 }
 
+void updateAxisSpeeds(long diffX, long diffZ, long diffA1) {
+  if (diffX == 0 && diffZ == 0 && diffA1 == 0) return;
+  long absX = abs(diffX);
+  long absZ = abs(diffZ);
+  long absC = abs(diffA1);
+  float stepsPerSecX = gcodeFeedDuPerSec * x.motorSteps / x.screwPitch;
+  float minStepsPerSecX = GCODE_FEED_MIN_DU_SEC * x.motorSteps / x.screwPitch;
+  if (stepsPerSecX > x.speedManualMove) stepsPerSecX = x.speedManualMove;
+  else if (stepsPerSecX < minStepsPerSecX) stepsPerSecX = minStepsPerSecX;
+  float stepsPerSecZ = gcodeFeedDuPerSec * z.motorSteps / z.screwPitch;
+  float minStepsPerSecZ = GCODE_FEED_MIN_DU_SEC * z.motorSteps / z.screwPitch;
+  if (stepsPerSecZ > z.speedManualMove) stepsPerSecZ = z.speedManualMove;
+  else if (stepsPerSecZ < minStepsPerSecZ) stepsPerSecZ = minStepsPerSecZ;
+  float stepsPerSecA1 = gcodeFeedDuPerSec * a1.motorSteps / a1.screwPitch;
+  float minStepsPerSecA1 = GCODE_FEED_MIN_DU_SEC * a1.motorSteps / a1.screwPitch;
+  if (stepsPerSecA1 > a1.speedManualMove) stepsPerSecA1 = a1.speedManualMove;
+  else if (stepsPerSecA1 < minStepsPerSecA1) stepsPerSecA1 = minStepsPerSecA1;
+  float secX = absX / stepsPerSecX;
+  float secZ = absZ / stepsPerSecZ;
+  float secA1 = absC / stepsPerSecA1;
+  float sec = ACTIVE_A1 ? max(max(secX, secZ), secA1) : max(secX, secZ);
+  x.speedMax = sec > 0 ? absX / sec : x.speedManualMove;
+  z.speedMax = sec > 0 ? absZ / sec : z.speedManualMove;
+  a1.speedMax = sec > 0 ? absC / sec : a1.speedManualMove;
+}
+
 // Rapid positioning / linear interpolation.
 void G00_01(const String& command) {
   long xStart = x.pos;

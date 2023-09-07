@@ -10,14 +10,6 @@ Axis z;
 Axis x;
 Axis a1;
 
-void setMeasure(int value) {
-  if (measure == value) {
-    return;
-  }
-  measure = value;
-  moveStep = measure == MEASURE_METRIC ? MOVE_STEP_1 : MOVE_STEP_IMP_1;
-}
-
 bool stepTo(Axis* a, long newPos, bool continuous) {
   if (xSemaphoreTake(a->mutex, 10) == pdTRUE) {
     a->continuous = continuous;
@@ -107,9 +99,9 @@ void initAxis(Axis* a, axisParam* param) {
   a->backlashSteps = param->backlashDu * a->motorSteps / a->screwPitch;
   a->gcodeRelativePos = 0;
 
-  a->ena = param->enaPin;
-  a->dir = param->dirPin;
-  a->step = param->stepPin;
+  a->enaPin = param->enaPin;
+  a->dirPin = param->dirPin;
+  a->stepPin = param->stepPin;
 }
 
 void updateEnable(Axis* a) {
@@ -117,18 +109,18 @@ void updateEnable(Axis* a) {
     if (((a == &x) && (INVERT_X_ENA)) ||
         ((a == &z) && (INVERT_Z_ENA)) ||
         ((a == &a1) && (INVERT_A1_ENA)))
-          DLOW(a->ena);
+          DLOW(a->enaPin);
     else
-      DHIGH(a->ena);
+      DHIGH(a->enaPin);
     // Stepper driver needs some time before it will react to pulses.
     DELAY(STEPPED_ENABLE_DELAY_MS);
   } else {
     if (((a == &x) && (INVERT_X_ENA)) ||
         ((a == &z) && (INVERT_Z_ENA)) ||
         ((a == &a1) && (INVERT_A1_ENA)))
-          DHIGH(a->ena);
+          DHIGH(a->enaPin);
     else
-      DLOW(a->ena);
+      DLOW(a->enaPin);
   }
 }
 
@@ -234,7 +226,7 @@ void setDir(Axis* a, bool dir) {
     a->speed = a->speedStart;
     a->direction = dir;
     a->directionInitialized = true;
-    DWRITE(a->dir, dir ^ a->invertStepper);
+    DWRITE(a->dirPin, dir ^ a->invertStepper);
     delayMicroseconds(DIRECTION_SETUP_DELAY_US);
   }
 }
@@ -244,9 +236,8 @@ Axis* getPitchAxis() {
 }
 
 void waitForPendingPosNear0(Axis* a) {
-  while (abs(a->pendingPos) > a->motorSteps / 3) {
+  while (abs(a->pendingPos) > a->motorSteps / 3) 
     taskYIELD();
-  }
 }
 
 void waitForPendingPos0(Axis* a) {
@@ -369,27 +360,25 @@ void applyRightStop(Axis* a) {
 void moveAxis(Axis* a) {
   // Most of the time a step isn't needed.
   if (a->pendingPos == 0) {
-    if (a->speed > a->speedStart) {
+    if (a->speed > a->speedStart) 
       a->speed--;
-    }
     return;
   }
 
   unsigned long nowUs = micros();
   float delayUs = 1000000.0 / a->speed;
   if (nowUs < a->stepStartUs) a->stepStartUs = 0; // micros() overflow
-  if (nowUs < (a->stepStartUs + delayUs - 5)) {
+  if (nowUs < (a->stepStartUs + delayUs - 5)) 
     // Not enough time has passed to issue this step.
     return;
-  }
-
+  
   if (xSemaphoreTake(a->mutex, 1) == pdTRUE) {
     // Check pendingPos again now that we have the mutex.
     if (a->pendingPos != 0) {
       bool dir = a->pendingPos > 0;
       setDir(a, dir);
 
-      DLOW(a->step);
+      DLOW(a->stepPin);
       int delta = dir ? 1 : -1;
       a->pendingPos -= delta;
       if (dir && a->motorPos >= a->pos) {
@@ -409,38 +398,11 @@ void moveAxis(Axis* a) {
       }
       a->stepStartUs = nowUs;
 
-      DHIGH(a->step);
+      DHIGH(a->stepPin);
     }
     xSemaphoreGive(a->mutex);
   }
 }
-
-void updateAxisSpeeds(long diffX, long diffZ, long diffA1) {
-  if (diffX == 0 && diffZ == 0 && diffA1 == 0) return;
-  long absX = abs(diffX);
-  long absZ = abs(diffZ);
-  long absC = abs(diffA1);
-  float stepsPerSecX = gcodeFeedDuPerSec * x.motorSteps / x.screwPitch;
-  float minStepsPerSecX = GCODE_FEED_MIN_DU_SEC * x.motorSteps / x.screwPitch;
-  if (stepsPerSecX > x.speedManualMove) stepsPerSecX = x.speedManualMove;
-  else if (stepsPerSecX < minStepsPerSecX) stepsPerSecX = minStepsPerSecX;
-  float stepsPerSecZ = gcodeFeedDuPerSec * z.motorSteps / z.screwPitch;
-  float minStepsPerSecZ = GCODE_FEED_MIN_DU_SEC * z.motorSteps / z.screwPitch;
-  if (stepsPerSecZ > z.speedManualMove) stepsPerSecZ = z.speedManualMove;
-  else if (stepsPerSecZ < minStepsPerSecZ) stepsPerSecZ = minStepsPerSecZ;
-  float stepsPerSecA1 = gcodeFeedDuPerSec * a1.motorSteps / a1.screwPitch;
-  float minStepsPerSecA1 = GCODE_FEED_MIN_DU_SEC * a1.motorSteps / a1.screwPitch;
-  if (stepsPerSecA1 > a1.speedManualMove) stepsPerSecA1 = a1.speedManualMove;
-  else if (stepsPerSecA1 < minStepsPerSecA1) stepsPerSecA1 = minStepsPerSecA1;
-  float secX = absX / stepsPerSecX;
-  float secZ = absZ / stepsPerSecZ;
-  float secA1 = absC / stepsPerSecA1;
-  float sec = ACTIVE_A1 ? max(max(secX, secZ), secA1) : max(secX, secZ);
-  x.speedMax = sec > 0 ? absX / sec : x.speedManualMove;
-  z.speedMax = sec > 0 ? absZ / sec : z.speedManualMove;
-  a1.speedMax = sec > 0 ? absC / sec : a1.speedManualMove;
-}
-
 
 void setupAxis() {
 

@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 
+void updateAxisSpeeds(long diffX, long diffZ, long diffA1);
 void gcodeWaitEpsilon(int epsilon);
 void gcodeWaitNear();
 void gcodeWaitStop();
