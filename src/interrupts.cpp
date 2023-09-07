@@ -11,20 +11,17 @@ void IRAM_ATTR onAsyncTimer() {
   if (!isOn || a->movingManually) {
     return;
   } else if (dupr > 0 && (a->leftStop == LONG_MAX || a->pos < a->leftStop)) {
-    if (a->pos >= a->motorPos) {
+    if (a->pos >= a->motorPos) 
       a->pos++;
-    }
     a->motorPos++;
     a->posGlobal++;
   } else if (dupr < 0 && (a->rightStop == LONG_MIN || a->pos > a->rightStop)) {
-    if (a->pos >= a->motorPos + a->backlashSteps) {
+    if (a->pos >= a->motorPos + a->backlashSteps) 
       a->pos--;
-    }
     a->motorPos--;
     a->posGlobal--;
-  } else {
+  } else 
     return;
-  }
 
   DLOW(a->stepPin);
   a->stepStartUs = micros();

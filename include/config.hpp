@@ -1,8 +1,6 @@
 #pragma once
 
-/* Change values in this section to suit your hardware. */
-
-// Define your hardware parameters here.
+// Change values in this section to suit your specific hardware.
 const int ENCODER_STEPS_INT = 1024; // 600 step spindle optical rotary encoder. Fractional values not supported.
 const int ENCODER_BACKLASH = 0; // was 3 Number of impulses encoder can issue without movement of the spindle
 
@@ -39,4 +37,3 @@ const char NAME_X = 'X'; // Text shown on screen before axis position value, GCo
 // Manual stepping with left/right/up/down buttons. Only used when step isn't default continuous (1mm or 0.1").
 const long STEP_TIME_MS = 500; // Time in milliseconds it should take to make 1 manual step.
 const long DELAY_BETWEEN_STEPS_MS = 80; // Time in milliseconds to wait between steps.
-

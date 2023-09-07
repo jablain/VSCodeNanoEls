@@ -1,13 +1,11 @@
-#include <Preferences.h>
 #include <LiquidCrystal.h>
-#include "vars.hpp"
 #include "pcb.hpp"
+#include "vars.hpp"
 #include "preferences.hpp"
 #include "modes.hpp"
 #include "spindle.hpp"
 #include "keypad.hpp"
 #include "tasks.hpp"
-#include "display.hpp"
 
 #define LCD_HASH_INITIAL -3845709 // Random number that's unlikely to naturally occur as an actual hash
 // To be incremented whenever a measurable improvement is made.

@@ -11,9 +11,8 @@ const long GCODE_WAIT_EPSILON_STEPS = 10;
 
 String getValueString(const String& command, char letter) {
   int index = command.indexOf(letter);
-  if (index == -1) {
+  if (index == -1) 
     return "";
-  }
   String valueString;
   for (int i = index + 1; i < command.length(); i++) {
     char c = command.charAt(i);
@@ -26,27 +25,18 @@ String getValueString(const String& command, char letter) {
   return valueString;
 }
 
-float getFloat(const String& command, char letter) {
-  return getValueString(command, letter).toFloat();
-}
+float getFloat(const String& command, char letter) { return getValueString(command, letter).toFloat(); }
 
-int getInt(const String& command, char letter) {
-  return getValueString(command, letter).toInt();
-}
+int getInt(const String& command, char letter) { return getValueString(command, letter).toInt(); }
 
 void gcodeWaitEpsilon(int epsilon) {
-  while (abs(x.pendingPos) > epsilon || abs(z.pendingPos) > epsilon || abs(a1.pendingPos) > epsilon) {
+  while (abs(x.pendingPos) > epsilon || abs(z.pendingPos) > epsilon || abs(a1.pendingPos) > epsilon) 
     taskYIELD();
-  }
 }
 
-void gcodeWaitNear() {
-  gcodeWaitEpsilon(GCODE_WAIT_EPSILON_STEPS);
-}
+void gcodeWaitNear() { gcodeWaitEpsilon(GCODE_WAIT_EPSILON_STEPS); }
 
-void gcodeWaitStop() {
-  gcodeWaitEpsilon(0);
-}
+void gcodeWaitStop() { gcodeWaitEpsilon(0); }
 
 void updateAxisSpeeds(long diffX, long diffZ, long diffA1) {
   if (diffX == 0 && diffZ == 0 && diffA1 == 0) return;
@@ -98,7 +88,8 @@ void G00_01(const String& command) {
   // To avoid any rounding error, move to precise position.
   stepToFinal(&x, xEnd);
   stepToFinal(&z, zEnd);
-  if (ACTIVE_A1) stepToFinal(&a1, a1End);
+  if (ACTIVE_A1)
+    stepToFinal(&a1, a1End);
   gcodeWaitStop();
 }
 
@@ -124,9 +115,9 @@ bool handleGcode(const String& command) {
 
 bool handleMcode(const String& command) {
   int op = getInt(command, 'M');
-  if (op == 0 || op == 1 || op == 2 || op == 30) {
+  if (op == 0 || op == 1 || op == 2 || op == 30)
     setIsOnFromTask(false);
-  } else {
+  else {
     setIsOnFromTask(false);
     DPRINT("error: unsupported command ");
     DPRINTLN(command);
@@ -137,14 +128,16 @@ bool handleMcode(const String& command) {
 
 void setFeedRate(const String& command) {
   float feed = getFloat(command, 'F');
-  if (feed <= 0) return;
+  if (feed <= 0)
+    return;
   gcodeFeedDuPerSec = round(feed * (measure == MEASURE_METRIC ? 10000 : 254000) / 60.0);
 }
 
 // Process one command, return ok flag.
 bool handleGcodeCommand(String command) {
   command.trim();
-  if (command.length() == 0) return false;
+  if (command.length() == 0)
+    return false;
 
   // Trim N.. prefix.
   char code = command.charAt(0);
@@ -168,7 +161,7 @@ bool handleGcodeCommand(String command) {
     case 'F': return true; /* feed already handled above */
     case 'M': return handleMcode(command);
     case 'T': return true; /* ignoring tool changes */
-    default: DPRINT("error: unsupported command "); DPRINTLN(code); return false;
+    default : DPRINT("error: unsupported command "); DPRINTLN(code); return false;
   }
   return false;
 }
