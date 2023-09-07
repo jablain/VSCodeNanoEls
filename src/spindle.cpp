@@ -6,7 +6,6 @@
 #include "spindle.hpp"
 
 unsigned long spindleEncTime = 0; // micros() of the previous spindle update
-unsigned long spindleEncTimeDiffBulk = 0; // micros() between RPM_BULK spindle updates
 unsigned long spindleEncTimeAtIndex0 = 0; // micros() when spindleEncTimeIndex was 0
 
 int  spindleEncTimeIndex = 0; // counter going between 0 and RPM_BULK - 1
@@ -32,24 +31,6 @@ void zeroSpindlePos() {
   spindlePos     = 0;
   spindlePosAvg  = 0;
   spindlePosSync = 0;
-}
-
-int getApproxRpm() {
-  unsigned long t = micros();
-  if (t > spindleEncTime + 100000) 
-    // RPM less than 10.
-    return 0;
-  if (t < shownRpmTime + RPM_UPDATE_INTERVAL_MICROS) 
-    // Don't update RPM too often to avoid flickering.
-    return shownRpm;
-  int rpm = 0;
-  if (spindleEncTimeDiffBulk > 0) {
-    rpm = 60000000 / spindleEncTimeDiffBulk;
-    if (abs(rpm - shownRpm) < (rpm < 1000 ? 2 : 5)) 
-      // Don't update RPM with insignificant differences.
-      rpm = shownRpm;
-  }
-  return rpm;
 }
 
 long spindleModulo(long value) {
@@ -92,6 +73,26 @@ void discountFullSpindleTurns() {
   }
 }
 
+unsigned long spindleEncTimeDiffBulk = 0; // micros() between RPM_BULK spindle updates
+
+int getApproxRpm() {
+  unsigned long t = micros();
+  if (t > spindleEncTime + 100000) 
+    // RPM less than 10.
+    return 0;
+  if (t < shownRpmTime + RPM_UPDATE_INTERVAL_MICROS) 
+    // Don't update RPM too often to avoid flickering.
+    return shownRpm;
+  int rpm = 0;
+  if (spindleEncTimeDiffBulk > 0) {
+    rpm = 60000000 / spindleEncTimeDiffBulk;
+    if (abs(rpm - shownRpm) < (rpm < 1000 ? 2 : 5)) 
+      // Don't update RPM with insignificant differences.
+      rpm = shownRpm;
+  }
+  return rpm;
+}
+
 //=============================================================================
 // This function is called from loop() to process spindle encoder ticks
 // recorded by the interrupt routine spinEnc().
@@ -113,14 +114,10 @@ void processSpindlePosDelta() {
   } else 
     spindleEncTimeDiffBulk = 0;
 
-  // Update the global posdition
-  spindlePosGlobal += delta;
-  if (spindlePosGlobal > ENCODER_STEPS_INT) 
-    spindlePosGlobal -= ENCODER_STEPS_INT;
-  else if (spindlePosGlobal < 0) 
-    spindlePosGlobal += ENCODER_STEPS_INT;
+  // Update the global position
+  spindlePosGlobal = (spindlePosGlobal + delta + ENCODER_STEPS_INT) % ENCODER_STEPS_INT;
 
-  // Update spindle position
+  // Update spindle position with backlash compensation
   spindlePos += delta; 
   if (spindlePos > spindlePosAvg) 
     spindlePosAvg = spindlePos;
@@ -136,7 +133,7 @@ void processSpindlePosDelta() {
       spindlePosAvg = spindlePos = spindleFromPos(a, a->pos);
     }
   }
-  spindlePosDelta -= delta;
+  spindlePosDelta -= delta; // Atomic operation to update spindlePosDelta
 }
 
 //===============================================================================

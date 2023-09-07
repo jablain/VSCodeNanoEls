@@ -3,7 +3,6 @@
 #include <atomic>
 
 extern unsigned long spindleEncTime; // micros() of the previous spindle update
-extern unsigned long spindleEncTimeDiffBulk; // micros() between RPM_BULK spindle updates
 extern unsigned long spindleEncTimeAtIndex0; // micros() when spindleEncTimeIndex was 0
 extern int spindleEncTimeIndex; // counter going between 0 and RPM_BULK - 1
 extern long spindlePos; // Spindle position
