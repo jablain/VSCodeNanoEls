@@ -21,4 +21,5 @@ long spindleModulo(long value);
 void zeroSpindlePos();
 void processSpindlePosDelta();
 void discountFullSpindleTurns();
+
 void taskAttachInterrupts(void *param);

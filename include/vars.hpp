@@ -33,7 +33,6 @@ const long SAFE_DISTANCE_DU = 5000; // Step back 0.5mm from the material when mo
 const long DIRECTION_SETUP_DELAY_US = 5; // Stepper driver needs some time to adjust to direction change
 const long STEPPED_ENABLE_DELAY_MS = 100; // Delay after stepper is enabled and before issuing steps
 // GCode-related constants.
-const long RPM_BULK = ENCODER_STEPS_INT; // Measure RPM averaged over this number of encoder pulses
 const long GCODE_FEED_DEFAULT_DU_SEC = 20000; // Default feed in du/sec in GCode mode
 const float GCODE_FEED_MIN_DU_SEC = 167; // Minimum feed in du/sec in GCode mode - F1
 const long PASSES_MAX = 999; // No more turn or face passes than this

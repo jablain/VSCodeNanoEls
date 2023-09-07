@@ -22,9 +22,6 @@ void doneBeep(){
 };
 
 void setupPCB(){
-  pinMode(ENC_A, INPUT_PULLUP);
-  pinMode(ENC_B, INPUT_PULLUP);
-
   pinMode(Z_DIR, OUTPUT);
   pinMode(Z_STEP, OUTPUT);
   pinMode(Z_ENA, OUTPUT);
