@@ -328,7 +328,7 @@ void updateLine2() {
 }
 
 void updateLine3() {
-  int rpm = showTacho ? getApproxRpm() : 0;
+  int rpm = round (currentRpm);
   long numpadResult = getNumpadResult();
   long gcodeCommandHash = 0;
   for (int i = 0; i < gcodeCommand.length(); i++)
@@ -432,10 +432,6 @@ void updateLine3() {
   } else if (showTacho) {
     charIndex += lcd.print("Tacho ");
     charIndex += lcd.print(rpm);
-    if (shownRpm != rpm) {
-      shownRpm = rpm;
-      shownRpmTime = micros();
-    }
     charIndex += lcd.print("rpm");
   }
   printLcdSpaces(charIndex);

@@ -188,11 +188,7 @@ void markOrigin() {
   markAxisOrigin(&z);
   markAxisOrigin(&x);
   markAxisOrigin(&a1);
-  #ifdef WITHSPINDLECLASS
-  TheSpindle.zeroSpindlePos();
-  #else
   zeroSpindlePos();
-  #endif
 }
 
 void markAxisOrigin(Axis* a) {

@@ -47,8 +47,6 @@ long moveStep = 0; // thousandth of a mm
 int measure = MEASURE_METRIC; // Whether to show distances in inches
 bool showAngle = false; // Whether to show 0-359 spindle angle on screen
 bool showTacho = false; // Whether to show spindle RPM on screen
-int shownRpm = 0;
-unsigned long shownRpmTime = 0; // micros() when shownRpm was set
 unsigned long keypadTimeUs = 0;
 
 void setMeasure(int value) {

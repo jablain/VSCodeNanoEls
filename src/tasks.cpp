@@ -354,7 +354,7 @@ void taskGcode(void *param) {
         DPRINT("|FS:");
         DPRINT(round(gcodeFeedDuPerSec * 60 / 10000.0));
         DPRINT(",");
-        DPRINT(getApproxRpm());
+        DPRINT(round (currentRpm));
         DPRINT(">"); // no new line to allow client to easily cut out the status response
       } else if (isOn) {
         if (gcodeInBrace && charCode < 32) {

@@ -74,8 +74,6 @@ extern bool gcodeInSemicolon;
 extern bool timerAttached;
 extern bool showAngle; // Whether to show 0-359 spindle angle on screen
 extern bool showTacho; // Whether to show spindle RPM on screen
-extern int shownRpm;
-extern unsigned long shownRpmTime; // micros() when shownRpm was set
 
 extern String gcodeCommand;
 extern bool auxForward; // True for external, false for external thread
