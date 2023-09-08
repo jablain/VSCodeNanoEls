@@ -394,7 +394,6 @@ void loop() {
   }
   applySettings();
   processSpindlePosDelta();
-  discountFullSpindleTurns();
   if (!isOn || dupr == 0 || spindlePosSync != 0) {
     // None of the modes work.
   } else if (mode == MODE_NORMAL) {

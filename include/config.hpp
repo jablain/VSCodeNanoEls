@@ -3,6 +3,7 @@
 // Change values in this section to suit your specific hardware.
 const int ENCODER_STEPS_INT = 1024; // 600 step spindle optical rotary encoder. Fractional values not supported.
 const int ENCODER_BACKLASH = 0; // was 3 Number of impulses encoder can issue without movement of the spindle
+const float ENCODER_STEPS_FLOAT = ENCODER_STEPS_INT; // Convenience float version of ENCODER_STEPS_INT
 
 // Spindle rotary encoder pins. Swap values if the rotation direction is wrong.
 #define ENC_A 7

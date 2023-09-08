@@ -1,3 +1,8 @@
+#define USEATOMICS
+#ifdef USEATOMICS
+#include <atomic>
+#endif
+
 #include "pcb.hpp"
 #include "macros.hpp"
 #include "vars.hpp"
@@ -14,7 +19,12 @@ long spindlePos; // Spindle position
 long spindlePosAvg; // Spindle position accounting for encoder backlash
 int  spindlePosSync; // Non-zero if gearbox is on and a soft limit was removed while axis was on it
 
+#ifdef USEATOMICS
 std::atomic<long> spindlePosDelta; // Unprocessed encoder ticks. see https://forum.arduino.cc/t/does-c-std-atomic-work-with-dual-core-esp32/690214
+#else
+volatile long spindlePosDelta; // Unprocessed encoder ticks. see https://forum.arduino.cc/t/does-c-std-atomic-work-with-dual-core-esp32/690214
+#endif
+
 long spindlePosGlobal = 0; // global spindle position that is unaffected by e.g. zeroing
 
 const long RPM_UPDATE_INTERVAL_MICROS = 1000000; // Don't redraw RPM more often than once per second
@@ -31,13 +41,6 @@ void zeroSpindlePos() {
   spindlePos     = 0;
   spindlePosAvg  = 0;
   spindlePosSync = 0;
-}
-
-long spindleModulo(long value) {
-  value = value % ENCODER_STEPS_INT;
-  if (value < 0) 
-    value += ENCODER_STEPS_INT;
-  return value;
 }
 
 void discountFullSpindleTurns() {
@@ -99,11 +102,19 @@ int getApproxRpm() {
 
 void processSpindlePosDelta() {
   const long RPM_BULK = ENCODER_STEPS_INT; // Measure RPM averaged over this number of encoder pulses
+  #ifdef USEATOMICS
   long delta = spindlePosDelta; // Atomic read of current spindlePosDelta
+  #else
+  noInterrupts();
+  long delta = spindlePosDelta; // Atomic read of current spindlePosDelta
+  spindlePosDelta = 0; // Atomic read of current spindlePosDelta
+  interrupts();
+  #endif
   if (delta == 0) // Nothing to do
     return;
   unsigned long microsNow = micros();
   // Update tachometer data
+
   if (showTacho || mode == MODE_GCODE) {
     if (spindleEncTimeIndex >= RPM_BULK) {
       spindleEncTimeDiffBulk = microsNow - spindleEncTimeAtIndex0;
@@ -133,7 +144,10 @@ void processSpindlePosDelta() {
       spindlePosAvg = spindlePos = spindleFromPos(a, a->pos);
     }
   }
+  #ifdef USEATOMICS
   spindlePosDelta -= delta; // Atomic operation to update spindlePosDelta
+  #endif
+  discountFullSpindleTurns();
 }
 
 //===============================================================================
